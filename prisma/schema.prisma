@@ -1,0 +1,151 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  ADMIN
+  SUPERVISOR
+  KASIR
+}
+
+model User {
+  id       String    @id @default(cuid())
+  name     String
+  image    String?
+  role     Role      @default(KASIR)
+  username String?   @unique
+  password String?
+  sessions Session[]
+  accounts Account[]
+
+  transactions Transaction[]
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  @@map("user")
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  expiresAt DateTime
+  token     String   @unique
+  createdAt DateTime
+  updatedAt DateTime
+  ipAddress String?
+  userAgent String?
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("session")
+}
+
+model Account {
+  id                    String    @id @default(cuid())
+  accountId             String
+  providerId            String
+  userId                String
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  createdAt             DateTime
+  updatedAt             DateTime
+
+  @@map("account")
+}
+
+model Verification {
+  id         String    @id @default(cuid())
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime?
+  updatedAt  DateTime?
+
+  @@map("verification")
+}
+
+model Product {
+  id                String            @id @default(cuid())
+  sku               String            @unique
+  name              String
+  hpp               Float
+  price             Float
+  stock             Int               @default(0)
+  lowStockThreshold Int               @default(10)
+  items             TransactionItem[]
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+  category          Category?         @relation(fields: [categoryId], references: [id])
+  categoryId        String?
+}
+
+model Category {
+  id        String    @id @default(cuid())
+  name      String
+  products  Product[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+}
+
+model Member {
+  id           String        @id @default(cuid())
+  name         String
+  phone        String?       @unique
+  points       Int           @default(0)
+  transactions Transaction[]
+  createdAt    DateTime      @default(now())
+}
+
+model Transaction {
+  id            String            @id @default(cuid())
+  invoiceNumber String            @unique
+  totalGross    Float
+  totalDiscount Float             @default(0)
+  totalNet      Float
+  totalProfit   Float
+  paymentMethod String
+  status        TransactionStatus @default(COMPLETED)
+
+  userId   String
+  user     User              @relation(fields: [userId], references: [id])
+  memberId String?
+  member   Member?           @relation(fields: [memberId], references: [id])
+  items    TransactionItem[]
+
+  createdAt DateTime @default(now())
+}
+
+enum TransactionStatus {
+  COMPLETED
+  PENDING
+  CANCELLED
+}
+
+model TransactionItem {
+  id            String      @id @default(cuid())
+  transactionId String
+  transaction   Transaction @relation(fields: [transactionId], references: [id], onDelete: Cascade)
+  productId     String
+  product       Product     @relation(fields: [productId], references: [id])
+
+  qty         Int
+  priceAtSale Float
+  hppAtSale   Float
+  subtotal    Float
+}
