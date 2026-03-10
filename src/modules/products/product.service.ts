@@ -108,20 +108,30 @@ const productService = {
   }) => {
     const { name, sku, hpp, price, stock, lowStockThreshold, categoryId } =
       data;
-    const imageUrl = file ? await uploadImage(file.buffer, "products") : null;
-    const product = await prisma.product.create({
-      data: {
-        name,
-        sku,
-        hpp: Number(hpp),
-        price: Number(price),
-        stock: Number(stock),
-        image_url: imageUrl,
-        lowStockThreshold: Number(lowStockThreshold),
-        categoryId,
-      },
-    });
-    return product;
+    let imageUrl: string | null = null;
+
+    try {
+      imageUrl = file ? await uploadImage(file.buffer, "products") : null;
+      const product = await prisma.product.create({
+        data: {
+          name,
+          sku,
+          hpp: Number(hpp),
+          price: Number(price),
+          stock: Number(stock),
+          image_url: imageUrl,
+          lowStockThreshold: Number(lowStockThreshold),
+          categoryId,
+        },
+      });
+
+      return product;
+    } catch (err) {
+      if (imageUrl) {
+        await deleteImage(imageUrl);
+      }
+      throw err;
+    }
   },
 
   updateProduct: async ({
@@ -133,48 +143,60 @@ const productService = {
     data: UpdateProductParams["body"];
     file: Express.Multer.File | undefined;
   }) => {
-    const { name, sku, hpp, price, stock, lowStockThreshold, categoryId } =
-      data;
-    let imageUrl = await prisma.product
-      .findUnique({
-        where: {
-          id,
-        },
-        select: {
-          image_url: true,
-        },
-      })
-      .then((res) => res?.image_url || null);
-
-    if (file) {
-      if (imageUrl) {
-        await deleteImage(imageUrl);
-      }
-
-      imageUrl = await uploadImage(file.buffer, "products");
-    }
-
-    const product = await prisma.product.update({
+    const existingProduct = await prisma.product.findUnique({
       where: {
         id,
       },
-      data: {
-        name,
-        sku,
-        hpp: Number(hpp),
-        price: Number(price),
-        stock: Number(stock),
-        lowStockThreshold: Number(lowStockThreshold),
-        categoryId,
-        image_url: imageUrl,
-      },
     });
 
-    if (!product) {
+    if (!existingProduct) {
       throw new CustomError(404, `Product with ID ${id} not found.`);
     }
 
-    return product;
+    const { name, sku, hpp, price, stock, lowStockThreshold, categoryId } =
+      data;
+    let newImageUrl: string | null = null;
+    const oldImageUrl = existingProduct.image_url;
+
+    try {
+      if (file) {
+        newImageUrl = await uploadImage(file.buffer, "products");
+      }
+
+      const product = await prisma.product.update({
+        where: {
+          id,
+        },
+        data: {
+          name,
+          sku,
+          hpp: Number(hpp),
+          price: Number(price),
+          stock: Number(stock),
+          lowStockThreshold: Number(lowStockThreshold),
+          categoryId,
+          image_url: newImageUrl,
+        },
+      });
+
+      if (file && oldImageUrl) {
+        await deleteImage(oldImageUrl);
+      }
+
+      return product;
+    } catch (err) {
+      if (err instanceof Prisma.PrismaClientKnownRequestError) {
+        if (err.code === "P2025") {
+          throw new CustomError(404, `Product with ID ${id} not found.`);
+        }
+      }
+
+      if (newImageUrl) {
+        await deleteImage(newImageUrl);
+      }
+
+      throw err;
+    }
   },
 
   deleteProduct: async ({
@@ -182,16 +204,25 @@ const productService = {
   }: {
     id: DeleteProductParams["params"]["id"];
   }) => {
-    const product = await prisma.product.delete({
-      where: {
-        id,
-      },
-    });
+    try {
+      const product = await prisma.product.delete({
+        where: {
+          id,
+        },
+      });
 
-    if (product.image_url) {
-      await deleteImage(product.image_url);
+      if (product.image_url) {
+        await deleteImage(product.image_url);
+      }
+      return product;
+    } catch (err) {
+      if (err instanceof Prisma.PrismaClientKnownRequestError) {
+        if (err.code === "P2025") {
+          throw new CustomError(404, `Product with ID ${id} not found.`);
+        }
+      }
+      throw err;
     }
-    return product;
   },
 
   alertLowStock: async () => {
