@@ -56,7 +56,7 @@ const productController = {
       const result = await productService.getProductById({
         id: req.params.id,
       });
-      return sendResponse(res, 200, "Product fetched successfully", result);
+      sendResponse(res, 200, "Product fetched successfully", result);
     } catch (error) {
       next(error);
     }
@@ -72,7 +72,7 @@ const productController = {
         file: req.file,
       });
 
-      return sendResponse(res, 200, "Product created successfully", result);
+      sendResponse(res, 200, "Product created successfully", result);
     } catch (error) {
       next(error);
     }

@@ -112,7 +112,7 @@ model Category {
 model Member {
   id           String        @id @default(cuid())
   name         String
-  phone        String?       @unique
+  phone        String        @unique
   points       Int           @default(0)
   transactions Transaction[]
   createdAt    DateTime      @default(now())
