@@ -2,6 +2,7 @@ import type { Request, Response, NextFunction } from "express";
 import productSchema from "./product.schema.js";
 import z from "zod";
 import productService from "./product.service.js";
+import sendResponse from "../../utils/sendResponse.js";
 
 type GetAllProductRequest = Request<
   unknown,
@@ -35,12 +36,13 @@ const productController = {
     try {
       const { query } = req;
       const result = await productService.getAllProducts({ query });
-      return res.status(200).json({
-        success: true,
-        message: "Products fetched successfully",
-        data: result.data,
-        meta: result.meta,
-      });
+      sendResponse(
+        res,
+        200,
+        "Products fetched successfully",
+        result.data,
+        result.meta,
+      );
     } catch (error) {
       next(error);
     }
@@ -54,11 +56,7 @@ const productController = {
       const result = await productService.getProductById({
         id: req.params.id,
       });
-      return res.status(200).json({
-        success: true,
-        message: "Product fetched successfully",
-        data: result,
-      });
+      return sendResponse(res, 200, "Product fetched successfully", result);
     } catch (error) {
       next(error);
     }
@@ -74,11 +72,7 @@ const productController = {
         file: req.file,
       });
 
-      return res.status(200).json({
-        success: true,
-        message: "Product created successfully",
-        data: result,
-      });
+      return sendResponse(res, 200, "Product created successfully", result);
     } catch (error) {
       next(error);
     }
@@ -94,11 +88,7 @@ const productController = {
         data: req.body,
         file: req.file,
       });
-      return res.status(200).json({
-        success: true,
-        message: "Product updated successfully",
-        data: result,
-      });
+      sendResponse(res, 200, "Product updated successfully", result);
     } catch (error) {
       next(error);
     }
@@ -112,11 +102,7 @@ const productController = {
       const result = await productService.deleteProduct({
         id: req.params.id,
       });
-      return res.status(200).json({
-        success: true,
-        message: "Product deleted successfully",
-        data: result,
-      });
+      sendResponse(res, 200, "Product deleted successfully", result);
     } catch (error) {
       next(error);
     }
@@ -124,11 +110,7 @@ const productController = {
   alertLowStock: async (req: Request, res: Response, next: NextFunction) => {
     try {
       const result = await productService.alertLowStock();
-      return res.status(200).json({
-        success: true,
-        message: "Low stock products fetched successfully",
-        data: result,
-      });
+      sendResponse(res, 200, "Low stock products fetched successfully", result);
     } catch (error) {
       next(error);
     }

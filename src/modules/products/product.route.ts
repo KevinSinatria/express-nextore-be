@@ -10,24 +10,31 @@ import { uploadMiddleware } from "../../middlewares/upload.middleware.js";
 
 const productRoute = express.Router();
 
-productRoute.use(isAuthenticated, authorizeRole(["ADMIN", "SUPERVISOR"]));
+productRoute.use(isAuthenticated);
 
 productRoute.get(
   "/",
+  authorizeRole(["ADMIN", "SUPERVISOR", "CASHIER"]),
   validate(productSchema.getAllProductsSchema),
   productController.getAllProducts,
 );
 
-productRoute.get("/alert-low-stock", productController.alertLowStock);
+productRoute.get(
+  "/alert-low-stock",
+  authorizeRole(["ADMIN", "SUPERVISOR"]),
+  productController.alertLowStock,
+);
 
 productRoute.get(
   "/:id",
+  authorizeRole(["ADMIN", "SUPERVISOR", "CASHIER"]),
   validate(productSchema.getProductByIdSchema),
   productController.getProductById,
 );
 
 productRoute.post(
   "/",
+  authorizeRole(["ADMIN", "SUPERVISOR"]),
   uploadMiddleware.single("image"),
   validate(productSchema.createProductSchema),
   productController.createProduct,
@@ -35,6 +42,7 @@ productRoute.post(
 
 productRoute.put(
   "/:id",
+  authorizeRole(["ADMIN", "SUPERVISOR"]),
   uploadMiddleware.single("image"),
   validate(productSchema.updateProductSchema),
   productController.updateProduct,
@@ -42,6 +50,7 @@ productRoute.put(
 
 productRoute.delete(
   "/:id",
+  authorizeRole(["ADMIN", "SUPERVISOR"]),
   validate(productSchema.deleteProductSchema),
   productController.deleteProduct,
 );
