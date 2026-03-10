@@ -1,6 +1,8 @@
 import { PrismaClientKnownRequestError } from "@prisma/client/runtime/client";
 import type { NextFunction, Request, Response } from "express";
 import { ZodError } from "zod";
+import { CustomError } from "../utils/custom-error.js";
+import { MulterError } from "multer";
 
 export const errorHandler = (
   err: Error,
@@ -10,12 +12,26 @@ export const errorHandler = (
 ) => {
   console.error("ERROR: ", err);
 
+  if (err instanceof CustomError) {
+    return res.status(err.statusCode).json({
+      success: false,
+      message: err.message,
+    });
+  }
+
   // Handle Zod Errors (validasi)
   if (err instanceof ZodError) {
     return res.status(400).json({
       success: false,
       message: "Validation error",
       errors: err.format(),
+    });
+  }
+
+  if (err instanceof MulterError) {
+    return res.status(400).json({
+      success: false,
+      message: "File too large",
     });
   }
 
@@ -29,8 +45,24 @@ export const errorHandler = (
 
   // Handle Prisma unique constraint errors
   if (err instanceof PrismaClientKnownRequestError && err.code === "P2002") {
-    const target = err.meta?.target as string | string[];
+    interface errType {
+      meta?: {
+        driverAdapterError?: {
+          cause?: {
+            constraint?: {
+              fields?: string | string[];
+            };
+          };
+        };
+      };
+    }
+
+    const errTyped = err as errType;
+    const target = errTyped.meta?.driverAdapterError?.cause?.constraint
+      ?.fields as string | string[];
     let cleanName: string;
+
+    console.log("target: ", target);
 
     if (Array.isArray(target)) {
       cleanName = target.join(", ");
@@ -41,7 +73,7 @@ export const errorHandler = (
 
     return res.status(409).json({
       success: false,
-      message: `Conflict: ${cleanName} already exists`,
+      message: `Conflict: ${cleanName} already exists.`,
     });
   }
 

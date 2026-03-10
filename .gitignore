@@ -1,3 +1,5 @@
 /src/generated/prisma
 /node_modules
 .env
+uploads/*
+prisma/migrations/*

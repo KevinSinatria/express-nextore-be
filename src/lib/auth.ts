@@ -1,16 +1,25 @@
 import { betterAuth } from "better-auth";
 import { prismaAdapter } from "@better-auth/prisma-adapter";
-import { BETTER_AUTH_SECRET } from "../config/env";
-import { customSession, username } from "better-auth/plugins";
-import prisma from "../config/prisma";
+import { customSession, openAPI, username } from "better-auth/plugins";
+import prisma from "../config/prisma.js";
+import { env } from "../config/env.js";
 
 export const auth = betterAuth({
   database: prismaAdapter(prisma, {
     provider: "postgresql",
   }),
-  secret: BETTER_AUTH_SECRET,
+  secret: env("BETTER_AUTH_SECRET"),
+  emailAndPassword: {
+    enabled: true,
+  },
+  trustedOrigins: [
+    env("BETTER_AUTH_URL"),
+    "http://localhost:5000",
+    "http://localhost:5173",
+  ],
   plugins: [
     username(),
+    openAPI(),
     customSession(async ({ user, session }) => {
       const userData = await prisma.user.findUnique({
         where: {
@@ -36,9 +45,9 @@ export const auth = betterAuth({
   user: {
     additionalFields: {
       role: {
-        type: "string",
+        type: ["CASHIER", "ADMIN", "SUPERVISOR"],
         required: true,
-        defaultValue: "KASIR",
+        defaultValue: "CASHIER",
       },
     },
   },
