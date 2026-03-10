@@ -5,7 +5,7 @@
 // Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
 
 generator client {
-  provider = "prisma-client-js"
+  provider = "prisma-client"
   output   = "../src/generated/prisma"
 }
 
@@ -16,18 +16,20 @@ datasource db {
 enum Role {
   ADMIN
   SUPERVISOR
-  KASIR
+  CASHIER
 }
 
 model User {
-  id       String    @id @default(cuid())
-  name     String
-  image    String?
-  role     Role      @default(KASIR)
-  username String?   @unique
-  password String?
-  sessions Session[]
-  accounts Account[]
+  id              String    @id @default(cuid())
+  name            String
+  image           String?
+  email           String?   @unique
+  emailVerified   Boolean   @default(false)
+  role            Role      @default(CASHIER)
+  username        String    @unique
+  displayUsername String?   @unique
+  sessions        Session[]
+  accounts        Account[]
 
   transactions Transaction[]
   createdAt    DateTime      @default(now())
@@ -47,6 +49,7 @@ model Session {
   userId    String
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  @@index([userId])
   @@map("session")
 }
 
@@ -66,6 +69,7 @@ model Account {
   createdAt             DateTime
   updatedAt             DateTime
 
+  @@index([userId])
   @@map("account")
 }
 
@@ -77,6 +81,7 @@ model Verification {
   createdAt  DateTime?
   updatedAt  DateTime?
 
+  @@index([identifier])
   @@map("verification")
 }
 
@@ -84,6 +89,7 @@ model Product {
   id                String            @id @default(cuid())
   sku               String            @unique
   name              String
+  image_url         String?           @db.Text
   hpp               Float
   price             Float
   stock             Int               @default(0)

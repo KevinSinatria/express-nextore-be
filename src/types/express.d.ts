@@ -10,3 +10,10 @@ declare global {
     }
   }
 }
+
+declare module "cors" {
+  interface CorsOptions {
+    origin: string;
+    credentials: boolean;
+  }
+}
