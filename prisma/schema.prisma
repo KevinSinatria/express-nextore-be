@@ -99,6 +99,31 @@ model Product {
   updatedAt         DateTime          @updatedAt
   category          Category?         @relation(fields: [categoryId], references: [id])
   categoryId        String?
+  discount          Discount?         @relation(fields: [discountId], references: [id])
+  discountId        String?
+}
+
+model Discount {
+  id                 String       @id @default(cuid())
+  name               String
+  description        String?
+  type               DiscountType @default(PERCENTAGE)
+  value              Float
+  startDate          DateTime     @default(now())
+  endDate            DateTime
+  isActive           Boolean      @default(true)
+  isTransactionLevel Boolean      @default(false)
+
+  products     Product[]
+  transactions Transaction[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+enum DiscountType {
+  PERCENTAGE
+  FIXED_AMOUNT
 }
 
 model Category {
@@ -126,13 +151,14 @@ model Transaction {
   totalNet      Float
   totalProfit   Float
   paymentMethod String
-  status        TransactionStatus @default(COMPLETED)
+  status        TransactionStatus @default(PENDING)
 
   userId   String
   user     User              @relation(fields: [userId], references: [id])
   memberId String?
   member   Member?           @relation(fields: [memberId], references: [id])
   items    TransactionItem[]
+  discount Discount[]
 
   createdAt DateTime @default(now())
 }
@@ -150,8 +176,9 @@ model TransactionItem {
   productId     String
   product       Product     @relation(fields: [productId], references: [id])
 
-  qty         Int
-  priceAtSale Float
-  hppAtSale   Float
-  subtotal    Float
+  qty           Int
+  priceAtSale   Float
+  hppAtSale     Float
+  totalDiscount Float @default(0)
+  subtotal      Float
 }
