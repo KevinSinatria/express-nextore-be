@@ -46,20 +46,27 @@ const memberService = {
     },
 
     getMemberById: async ({id}: {id:string}) => {
+        try {
         const member = await prisma.member.findUnique({
             where: {id},
             include: {
                 _count: {select: {transactions: true}},
             }
         });
-        if (!member) throw new CustomError(404, 'Member dengan ID ${id} tidak ditemukan');
-        return member;
+    } catch (err) {
+            if (err instanceof Prisma.PrismaClientKnownRequestError) {
+                if (err.code === "P2025") {
+                    throw new CustomError(404, `Member with ID  "${id}" not found`);
+                }
+            }
+            throw err;
+        }
     },
     
     createMember: async ({data}: {data: CreateMemberParams["body"]}) => {
         return await prisma.member.create({
             data: {
-                name: data.name
+                name: data.name,
                 phone: data.phone ?? "",
                 points: 0,
             },
@@ -71,18 +78,39 @@ const memberService = {
 
         if (data.name !== undefined) updateData.name = data.name;
         if (data.points !== undefined) updateData.points = data.points;
-        if (data.phone !== undefined),
 
+        if (data.phone !== undefined) {
+            updateData.phone = data.phone ?? "";
+        }
+
+        try {
         const member = await prisma.member.update({
             where: {id},
-            data,
+            data: updateData,
         });
+    } catch (err) {
+        if (err instanceof Prisma.PrismaClientKnownRequestError) {
+            if (err.code === "P2025") {
+                throw new CustomError(404, `Member with ID "${id}" not found`);
+            }
+        }
+        throw err;
+    } 
     },
 
     deleteMember: async ({id}: {id: string}) => {
-        return await prisma.member.delete({
-            where: {id},
-        });
+        try {
+            return await prisma.member.delete({
+                where: {id},
+            });
+        } catch (err) {
+            if (err instanceof Prisma.PrismaClientKnownRequestError) {
+                if (err.code === "P2025") {
+                    throw new CustomError(404, `Member with ID "${id}" not found`);
+                }
+            }
+            throw err;
+        }
     },
 };
 

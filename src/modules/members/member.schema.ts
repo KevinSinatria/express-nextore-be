@@ -15,12 +15,9 @@ const getMemberByIdSchema = z.object({
 });
 
 const createMemberSchema = z.object({
-    params: z.object({
-        id: z.string().cuid(),
-    }),
     body: z.object({
-        name: z.string().min(3, "Nama minimal 3 karakter"),
-        phone: z.string().min(10, "Nomor telepon minimal 10 digit").optional().nullable(),
+        name: z.string().min(1, "Name must be at least 1 character"),
+        phone: z.string().min(8, "Phone number minimum 8 digits").optional().nullable(),
     }),
 });
 
@@ -29,8 +26,8 @@ const updateMemberSchema = z.object({
         id: z.string().cuid(),
     }),
     body: z.object({
-        name: z.string().min(3).optional(),
-        phone: z.string().min(10).optional().nullable(),
+        name: z.string().min(1).optional(),
+        phone: z.string().min(8).optional().nullable(),
         points: z.number().int().optional(),
     }),
 });
