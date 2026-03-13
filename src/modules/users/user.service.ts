@@ -57,6 +57,7 @@ const userService = {
     createUser: async ({data}: {data: CreateUserParams["body"]}) =>{
         const newUser = await auth.api.signUpEmail({
             body: {
+                
                 email: `${data.username}@nextore.com`,
                 password: data.password,
                 username: data.username,
@@ -64,7 +65,7 @@ const userService = {
                 role: data.role,
             },
         });
-
+        
     return await prisma.user.update({
         where: {id: newUser.user.id},
         data: {role: data.role}
@@ -72,14 +73,43 @@ const userService = {
     },
 
     updateUser: async ({id, data}: {id: string; data: any}) => {
-        const cleanData = Object.fromEntries(
-            Object.entries(data).filter(([__, v]) => v !== undefined)
-        );
+        try {
+            // if (data.password) {
+            //     await (auth.api as any).setPassword({
+            //         body: {
+            //             userId: id,
+            //             newPassword: data.password,
+            //         }
+            //     });
+            // }
 
-        return await prisma.user.update({
-            where: {id},
-            data: cleanData,
-        });
+            const updateData: Prisma.UserUpdateInput = {};
+            
+            if (data.name) updateData.name = data.name;
+            if (data.role) updateData.role = data.role;
+            if (data.image !== undefined) updateData.image = data.image;
+            
+            if (data.username) {
+                updateData.username = data.username;
+                updateData.displayUsername = data.username;
+            }
+
+            console.log("Data yang akan diproses Prisma:", updateData);
+
+            const updatedUser = await prisma.user.update({
+                where: { id },
+                data: updateData,
+            });
+
+            return updatedUser;
+        } catch (err) {
+            if (err instanceof Prisma.PrismaClientKnownRequestError) {
+                if (err.code === "P2025") {
+                    throw new CustomError(404, `User with ID "${id}" not found`);
+                }
+            }
+            throw err;
+        }
     },
 
     deleteUser: async ({id}: {id: string}) => {

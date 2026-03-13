@@ -54,7 +54,7 @@ const userController = {
 
     updateUser: async (req: UpdateUserRequest, res: Response, next: NextFunction) => {
         try {
-            const result = await userService.updateUser({id: req.params.id, data: req});
+            const result = await userService.updateUser({id: req.params.id, data: req.body});
             sendResponse(res, 200, "User updated successfully", result);
         } catch (error) {
             next(error);

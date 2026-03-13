@@ -69,7 +69,6 @@ const memberService = {
             data: {
                 name: data.name,
                 phone: data.phone ?? "",
-                points: 0,
             },
         });
     },
@@ -78,7 +77,6 @@ const memberService = {
         const updateData: Prisma.MemberUpdateInput = {};
 
         if (data.name !== undefined) updateData.name = data.name;
-        if (data.points !== undefined) updateData.points = data.points;
 
         if (data.phone !== undefined) {
             updateData.phone = data.phone ?? "";

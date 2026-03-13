@@ -10,7 +10,7 @@ const getAllUsersSchema = z.object({
 
 const getUserByIdSchema = z.object({
     params: z.object({
-        id: z.string().cuid(),
+        id: z.string(),
     }),
 });
 
@@ -20,7 +20,7 @@ const getUserByUsernameSchema = z.object({
     }),
 });
 
-const createUserSchema = z.object({
+const createUserSchema = z.object({ 
     body: z.object ({
         name: z.string()
             .min(1, "Name must be at least 1 character")
@@ -38,7 +38,7 @@ const createUserSchema = z.object({
 
 const updateUserSchema = z.object({
     params: z.object({
-        id: z.string().cuid(),
+        id: z.string(),
     }),
     body: z.object({
         name: z.string()
@@ -56,7 +56,7 @@ const updateUserSchema = z.object({
 
 const deleteUserSchema = z.object({
     params: z.object({
-        id: z.string().cuid(),
+        id: z.string(),
     }),
 });
 
