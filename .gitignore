@@ -3,4 +3,4 @@
 .env
 uploads/*
 prisma/migrations/*
-/dist/*
+/dist
