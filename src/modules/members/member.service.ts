@@ -53,6 +53,7 @@ const memberService = {
                 _count: {select: {transactions: true}},
             }
         });
+        return member;
     } catch (err) {
             if (err instanceof Prisma.PrismaClientKnownRequestError) {
                 if (err.code === "P2025") {
@@ -88,6 +89,7 @@ const memberService = {
             where: {id},
             data: updateData,
         });
+        return member;
     } catch (err) {
         if (err instanceof Prisma.PrismaClientKnownRequestError) {
             if (err.code === "P2025") {

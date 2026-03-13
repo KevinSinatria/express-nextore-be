@@ -3,7 +3,6 @@ import memberSchema from "./member.schema.js";
 import z from "zod";
 import memberService from "./member.service.js";
 import sendResponse from "../../utils/sendResponse.js";
-import { id } from "zod/locales";
 
 type GetAllMembersRequest = Request<
     unknown,
@@ -61,7 +60,7 @@ const memberController = {
             const result = await memberService.getMemberById({
                 id: req.params.id,
             });
-            sendResponse(res, 200, `Member with ID ${id} fetched successfully`, result);
+            sendResponse(res, 200, `Member with ID ${req.params.id} fetched successfully`, result);
         } catch (error){
             next(error);
         }
@@ -76,7 +75,7 @@ const memberController = {
             const result = await memberService.createMember({
                 data: req.body,
             });
-            sendResponse(res, 201, `Member with ID ${id} created successfully`, result);
+            sendResponse(res, 201, `Member with ID ${result.id} created successfully`, result);
         } catch (error){
             next(error);
         }
@@ -92,7 +91,7 @@ const memberController = {
                 id: req.params.id,
                 data: req.body,
             });
-            sendResponse(res, 200, `Member with ID ${id} updated successfully`, result);
+            sendResponse(res, 200, `Member with ID ${req.params.id} updated successfully`, result);
         } catch(error) {
             next(error);
         }
@@ -107,7 +106,7 @@ const memberController = {
             const result = await memberService.deleteMember({
                 id: req.params.id,
             });
-            sendResponse(res, 200, `Member with ID ${id} deleted successfully`, result);
+            sendResponse(res, 200, `Member with ID ${req.params.id} deleted successfully`, result);
         } catch(error) {
             next(error);
         }
