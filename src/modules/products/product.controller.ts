@@ -69,7 +69,7 @@ const productController = {
     try {
       const result = await productService.createProduct({
         data: req.body,
-        file: req.file,
+        files: req.files as Express.Multer.File[] | undefined,
       });
 
       sendResponse(res, 200, "Product created successfully", result);
@@ -86,7 +86,7 @@ const productController = {
       const result = await productService.updateProduct({
         id: req.params.id,
         data: req.body,
-        file: req.file,
+        files: req.files as Express.Multer.File[] | undefined,
       });
       sendResponse(res, 200, "Product updated successfully", result);
     } catch (error) {

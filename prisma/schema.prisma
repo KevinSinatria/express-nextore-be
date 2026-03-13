@@ -89,7 +89,7 @@ model Product {
   id                String            @id @default(cuid())
   sku               String            @unique
   name              String
-  image_url         String?           @db.Text
+  images            String[]          @default([])
   hpp               Float
   price             Float
   stock             Int               @default(0)
@@ -99,8 +99,7 @@ model Product {
   updatedAt         DateTime          @updatedAt
   category          Category?         @relation(fields: [categoryId], references: [id])
   categoryId        String?
-  discount          Discount?         @relation(fields: [discountId], references: [id])
-  discountId        String?
+  discount          Discount[]
 }
 
 model Discount {
@@ -113,6 +112,7 @@ model Discount {
   endDate            DateTime
   isActive           Boolean      @default(true)
   isTransactionLevel Boolean      @default(false)
+  isMemberLevel      Boolean      @default(false)
 
   products     Product[]
   transactions Transaction[]
@@ -138,7 +138,6 @@ model Member {
   id           String        @id @default(cuid())
   name         String
   phone        String        @unique
-  points       Int           @default(0)
   transactions Transaction[]
   createdAt    DateTime      @default(now())
 }

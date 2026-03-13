@@ -83,35 +83,44 @@ const productService = {
   }: {
     id: GetProductByIdParams["params"]["id"];
   }) => {
-    const product = await prisma.product.findUnique({
-      where: {
-        id,
-      },
-      include: {
-        category: true,
-      },
-    });
+    try {
+      const product = await prisma.product.findUnique({
+        where: {
+          id,
+        },
+        include: {
+          category: true,
+        },
+      });
 
-    if (!product) {
-      throw new CustomError(404, `Product with ID ${id} not found.`);
+      return product;
+    } catch (err) {
+      if (err instanceof Prisma.PrismaClientKnownRequestError) {
+        if (err.code === "P2025") {
+          throw new CustomError(404, `Product with ID ${id} not found.`);
+        }
+      }
+      throw err;
     }
-
-    return product;
   },
 
   createProduct: async ({
     data,
-    file,
+    files,
   }: {
     data: CreateProductParams["body"];
-    file: Express.Multer.File | undefined;
+    files: Express.Multer.File[] | undefined;
   }) => {
     const { name, sku, hpp, price, stock, lowStockThreshold, categoryId } =
       data;
-    let imageUrl: string | null = null;
+    let imageUrls: string[] = [];
 
     try {
-      imageUrl = file ? await uploadImage(file.buffer, "products") : null;
+      if (files && files.length > 0) {
+        imageUrls = await Promise.all(
+          files.map((file) => uploadImage(file.buffer, "products")),
+        );
+      }
       const product = await prisma.product.create({
         data: {
           name,
@@ -119,7 +128,7 @@ const productService = {
           hpp: Number(hpp),
           price: Number(price),
           stock: Number(stock),
-          image_url: imageUrl,
+          images: imageUrls,
           lowStockThreshold: Number(lowStockThreshold),
           categoryId,
         },
@@ -127,8 +136,8 @@ const productService = {
 
       return product;
     } catch (err) {
-      if (imageUrl) {
-        await deleteImage(imageUrl);
+      if (imageUrls.length > 0) {
+        await Promise.all(imageUrls.map((url) => deleteImage(url)));
       }
       throw err;
     }
@@ -137,30 +146,28 @@ const productService = {
   updateProduct: async ({
     id,
     data,
-    file,
+    files,
   }: {
     id: UpdateProductParams["params"]["id"];
     data: UpdateProductParams["body"];
-    file: Express.Multer.File | undefined;
+    files: Express.Multer.File[] | undefined;
   }) => {
-    const existingProduct = await prisma.product.findUnique({
-      where: {
-        id,
-      },
-    });
-
-    if (!existingProduct) {
-      throw new CustomError(404, `Product with ID ${id} not found.`);
-    }
-
     const { name, sku, hpp, price, stock, lowStockThreshold, categoryId } =
       data;
-    let newImageUrl: string | null = null;
-    const oldImageUrl = existingProduct.image_url;
+    let newImageUrls: string[] | null = null;
 
     try {
-      if (file) {
-        newImageUrl = await uploadImage(file.buffer, "products");
+      const existingProduct = await prisma.product.findUniqueOrThrow({
+        where: {
+          id,
+        },
+      });
+      const oldImageUrls = existingProduct.images;
+
+      if (files && files.length > 0) {
+        newImageUrls = await Promise.all(
+          files.map((file) => uploadImage(file.buffer, "products")),
+        );
       }
 
       const product = await prisma.product.update({
@@ -175,12 +182,14 @@ const productService = {
           stock: Number(stock),
           lowStockThreshold: Number(lowStockThreshold),
           categoryId,
-          image_url: newImageUrl,
+          ...(newImageUrls && { images: newImageUrls }),
         },
       });
 
-      if (file && oldImageUrl) {
-        await deleteImage(oldImageUrl);
+      if (newImageUrls && oldImageUrls.length > 0) {
+        Promise.all(oldImageUrls.map((url) => deleteImage(url))).catch(
+          console.error,
+        );
       }
 
       return product;
@@ -191,8 +200,8 @@ const productService = {
         }
       }
 
-      if (newImageUrl) {
-        await deleteImage(newImageUrl);
+      if (newImageUrls && newImageUrls.length > 0) {
+        await Promise.all(newImageUrls.map((url) => deleteImage(url)));
       }
 
       throw err;
@@ -211,8 +220,10 @@ const productService = {
         },
       });
 
-      if (product.image_url) {
-        await deleteImage(product.image_url);
+      if (product.images.length > 0) {
+        Promise.all(product.images.map((url) => deleteImage(url))).catch(
+          console.error,
+        );
       }
       return product;
     } catch (err) {

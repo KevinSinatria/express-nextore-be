@@ -3,6 +3,7 @@ import { prismaAdapter } from "@better-auth/prisma-adapter";
 import { customSession, openAPI, username } from "better-auth/plugins";
 import prisma from "../config/prisma.js";
 import { env } from "../config/env.js";
+import { createId } from "@paralleldrive/cuid2";
 
 export const auth = betterAuth({
   database: prismaAdapter(prisma, {
@@ -17,6 +18,11 @@ export const auth = betterAuth({
     "http://localhost:5000",
     "http://localhost:5173",
   ],
+  advanced: {
+    database: {
+      generateId: () => createId(),
+    },
+  },
   plugins: [
     username(),
     openAPI(),

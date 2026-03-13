@@ -35,7 +35,7 @@ productRoute.get(
 productRoute.post(
   "/",
   authorizeRole(["ADMIN", "SUPERVISOR"]),
-  uploadMiddleware.single("image"),
+  uploadMiddleware.array("images", 5),
   validate(productSchema.createProductSchema),
   productController.createProduct,
 );
@@ -43,7 +43,7 @@ productRoute.post(
 productRoute.put(
   "/:id",
   authorizeRole(["ADMIN", "SUPERVISOR"]),
-  uploadMiddleware.single("image"),
+  uploadMiddleware.array("images", 5),
   validate(productSchema.updateProductSchema),
   productController.updateProduct,
 );

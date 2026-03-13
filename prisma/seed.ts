@@ -34,25 +34,29 @@ async function main() {
   users.push(admin.user);
 
   // Supervisor
-  const supervisor = await prisma.user.create({
-    data: {
-      name: "Supervisor Store",
-      username: "supervisorstoe",
-      role: Role.SUPERVISOR,
+  const supervisor = await auth.api.signUpEmail({
+    body: {
+      username: "supervisor",
+      password: "supervisor123",
+      name: "supervisor",
+      role: "SUPERVISOR",
+      email: `supervisor@placeholder.local`,
     },
   });
-  users.push(supervisor);
+  users.push(supervisor.user);
 
   // Cashiers
   for (let i = 0; i < 5; i++) {
-    const cashier = await prisma.user.create({
-      data: {
-        name: faker.person.fullName(),
-        username: faker.internet.userName().toLowerCase(),
-        role: Role.CASHIER,
+    const cashier = await auth.api.signUpEmail({
+      body: {
+        username: `cashier${i}`,
+        password: `cashier123`,
+        name: `cashier${i}`,
+        role: "CASHIER",
+        email: `cashier${i}@placeholder.local`,
       },
     });
-    users.push(cashier);
+    users.push(cashier.user);
   }
 
   // 2. Seed Categories
@@ -80,7 +84,7 @@ async function main() {
       data: {
         sku: faker.string.alphanumeric({ length: 10, casing: "upper" }),
         name: faker.commerce.productName(),
-        image_url: faker.image.url({ width: 400, height: 400 }),
+        images: [faker.image.url({ width: 400, height: 400 })],
         hpp: Math.round(hpp),
         price,
         stock: faker.number.int({ min: 10, max: 500 }),
@@ -99,7 +103,6 @@ async function main() {
       data: {
         name: faker.person.fullName(),
         phone: faker.phone.number(),
-        points: faker.number.int({ min: 0, max: 5000 }),
       },
     });
     members.push(member);

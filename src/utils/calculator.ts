@@ -7,3 +7,10 @@ export const calculateDiscountedPrice = (
   }
   return Math.max(0, originalPrice - discount.value);
 };
+
+export const calculateDiscountAmount = (price: number, discount: any) => {
+  if (discount.type === "PERCENTAGE") {
+    return price * (discount.value / 100);
+  }
+  return discount.value;
+};

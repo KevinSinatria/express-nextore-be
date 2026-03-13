@@ -85,7 +85,7 @@ const transactionController = {
       const result = await transactionService.deleteTransaction({
         id: req.params.id,
       });
-      sendResponse(res, 200, "Transaction deleted successfully", result);
+      sendResponse(res, 200, "Transaction cancelled successfully", result);
     } catch (error) {
       next(error);
     }

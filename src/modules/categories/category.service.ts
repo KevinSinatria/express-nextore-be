@@ -8,8 +8,12 @@ import {
 } from "../../utils/pagination.js";
 import { CustomError } from "../../utils/custom-error.js";
 
-type GetAllCategoriesParams = z.infer<typeof categorySchema.getAllCategoriesSchema>;
-type GetCategoryByIdParams = z.infer<typeof categorySchema.getCategoryByIdSchema>;
+type GetAllCategoriesParams = z.infer<
+  typeof categorySchema.getAllCategoriesSchema
+>;
+type GetCategoryByIdParams = z.infer<
+  typeof categorySchema.getCategoryByIdSchema
+>;
 type CreateCategoryParams = z.infer<typeof categorySchema.createCategorySchema>;
 type UpdateCategoryParams = z.infer<typeof categorySchema.updateCategorySchema>;
 type DeleteCategoryParams = z.infer<typeof categorySchema.deleteCategorySchema>;
@@ -42,9 +46,9 @@ const categoryService = {
         take: limit || 10,
         include: {
           _count: {
-            select: { products: true }
-          }
-        }
+            select: { products: true },
+          },
+        },
       }),
       prisma.category.count({
         where,
@@ -60,27 +64,28 @@ const categoryService = {
   }: {
     id: GetCategoryByIdParams["params"]["id"];
   }) => {
-    const category = await prisma.category.findUnique({
-      where: {
-        id,
-      },
-      include: {
-        products: true,
-      },
-    });
+    try {
+      const category = await prisma.category.findUnique({
+        where: {
+          id,
+        },
+        include: {
+          products: true,
+        },
+      });
 
-    if (!category) {
-      throw new CustomError(404, `Category with ID ${id} not found.`);
+      return category;
+    } catch (err) {
+      if (err instanceof Prisma.PrismaClientKnownRequestError) {
+        if (err.code === "P2025") {
+          throw new CustomError(404, `Category with ID ${id} not found.`);
+        }
+      }
+      throw err;
     }
-
-    return category;
   },
 
-  createCategory: async ({
-    data,
-  }: {
-    data: CreateCategoryParams["body"];
-  }) => {
+  createCategory: async ({ data }: { data: CreateCategoryParams["body"] }) => {
     const { name } = data;
 
     const category = await prisma.category.create({
