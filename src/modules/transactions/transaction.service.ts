@@ -4,11 +4,18 @@ import {
   createPaginationMeta,
   getPaginationParams,
 } from "../../utils/pagination.js";
-import type { Prisma } from "../../generated/prisma/client.js";
+import {
+  Prisma,
+  type Member,
+  type Product,
+} from "../../generated/prisma/client.js";
 import prisma from "../../config/prisma.js";
 import { CustomError } from "../../utils/custom-error.js";
 import { generateInvoiceNumber } from "../../utils/generateInvoiceNum.js";
-import { calculateDiscountedPrice } from "../../utils/calculator.js";
+import {
+  calculateDiscountAmount,
+  calculateDiscountedPrice,
+} from "../../utils/calculator.js";
 
 type getAllTransactionParams = z.infer<
   typeof transactionSchema.getAllTransactionSchema
@@ -78,26 +85,31 @@ const transactionService = {
   }: {
     id: getTransactionByIdParams["params"]["id"];
   }) => {
-    const transaction = await prisma.transaction.findUnique({
-      where: {
-        id,
-      },
-      include: {
-        items: {
-          include: {
-            product: true,
-          },
+    try {
+      const transaction = await prisma.transaction.findUnique({
+        where: {
+          id,
         },
-        user: true,
-        member: true,
-      },
-    });
+        include: {
+          items: {
+            include: {
+              product: true,
+            },
+          },
+          user: true,
+          member: true,
+        },
+      });
 
-    if (!transaction) {
-      throw new CustomError(404, `Transaction with ID ${id} not found.`);
+      return transaction;
+    } catch (err) {
+      if (err instanceof Prisma.PrismaClientKnownRequestError) {
+        if (err.code === "P2025") {
+          throw new CustomError(404, `Transaction with ID ${id} not found.`);
+        }
+      }
+      throw err;
     }
-
-    return transaction;
   },
 
   createTransaction: async ({
@@ -116,19 +128,46 @@ const transactionService = {
       let totalProfit: number = 0;
       let totalNet: number = 0;
 
+      let member: Member | null = null;
+      if (memberId) {
+        try {
+          member = await tx.member.findUniqueOrThrow({
+            where: {
+              id: memberId,
+            },
+          });
+        } catch (err) {
+          if (
+            err instanceof Prisma.PrismaClientKnownRequestError &&
+            err.code === "P2025"
+          ) {
+            throw new CustomError(404, `Member with ID ${memberId} not found.`);
+          }
+          throw err;
+        }
+      }
+
+      const activeDiscount = await tx.discount.findMany({
+        where: {
+          isActive: true,
+          startDate: {
+            lte: new Date(),
+          },
+          endDate: {
+            gte: new Date(),
+          },
+        },
+      });
+
       const getActiveTransactionDiscount = async () => {
         const now = new Date();
-        return tx.discount.findMany({
-          where: {
-            isTransactionLevel: true,
-            isActive: true,
-            startDate: {
-              lte: now,
-            },
-            endDate: {
-              gte: now,
-            },
-          },
+        return activeDiscount.filter((d) => {
+          return (
+            d.isTransactionLevel &&
+            now >= d.startDate &&
+            now <= d.endDate &&
+            (member ? d.isMemberLevel : true)
+          );
         });
       };
 
@@ -142,32 +181,47 @@ const transactionService = {
       }[] = [];
 
       for (const item of items) {
-        const getActiveItemDiscount = (product: any) => {
+        const getBestItemDiscount = (product: any) => {
           const now = new Date();
 
-          if (!product.discount || product.discount.length === 0) {
-            return null;
-          }
-
-          return product.discount.find(
-            (d: any) => d.isActive && now >= d.startDate && now <= d.endDate,
+          const validDiscounts = product.discount.filter(
+            (d: any) =>
+              d.isActive &&
+              now >= d.startDate &&
+              now <= d.endDate &&
+              (member ? d.isMemberLevel : true),
           );
+
+          if (validDiscounts.length === 0) return 0;
+
+          const discountAmounts = validDiscounts.map((d: any) =>
+            calculateDiscountAmount(product.price, d),
+          );
+
+          return Math.max(...discountAmounts) || 0;
         };
 
-        const product = await tx.product.findUnique({
-          where: {
-            id: item.productId,
-          },
-          include: {
-            discount: true,
-          },
-        });
-
-        if (!product) {
-          throw new CustomError(
-            404,
-            `Product with ID ${item.productId} not found.`,
-          );
+        let product;
+        try {
+          product = await tx.product.findUniqueOrThrow({
+            where: {
+              id: item.productId,
+            },
+            include: {
+              discount: true,
+            },
+          });
+        } catch (err) {
+          if (
+            err instanceof Prisma.PrismaClientKnownRequestError &&
+            err.code === "P2025"
+          ) {
+            throw new CustomError(
+              404,
+              `Product with ID ${item.productId} not found.`,
+            );
+          }
+          throw err;
         }
 
         if (product.stock < item.qty) {
@@ -175,25 +229,28 @@ const transactionService = {
             400,
             `Product with ID ${item.productId} is out of stock.`,
           );
+        } else {
+          await tx.product.update({
+            where: {
+              id: item.productId,
+            },
+            data: {
+              stock: {
+                decrement: item.qty,
+              },
+            },
+          });
         }
 
         let totalItemDiscount: number = 0;
-        const itemDiscounts = getActiveItemDiscount(product);
+        const bestDiscountPerPcs = getBestItemDiscount(product);
 
-        if (itemDiscounts) {
-          for (const discount of itemDiscounts) {
-            totalItemDiscount += calculateDiscountedPrice(
-              product.price,
-              discount,
-            );
-          }
-        }
+        totalItemDiscount += bestDiscountPerPcs * item.qty;
 
         const totalItemGross = product.price * item.qty;
         const totalItemNet = totalItemGross - totalItemDiscount;
         totalDiscount += totalItemDiscount;
         totalGross += totalItemGross;
-        totalNet += totalItemGross - totalItemDiscount;
         totalProfit += totalItemNet - product.hpp * item.qty;
 
         transactionItems.push({
@@ -202,37 +259,27 @@ const transactionService = {
           priceAtSale: product.price,
           hppAtSale: product.hpp,
           totalDiscount: totalItemDiscount,
-          subtotal: totalItemGross - totalItemDiscount,
+          subtotal: totalItemNet,
         });
       }
 
+      const subtotalAfterItemDiscount = transactionItems.reduce(
+        (total, item) => total + item.subtotal,
+        0,
+      );
+
+      let transactionDiscountAmount = 0;
       const transactionDiscounts = await getActiveTransactionDiscount();
       transactionDiscounts.forEach((discount) => {
-        totalDiscount += calculateDiscountedPrice(totalGross, discount);
+        transactionDiscountAmount += calculateDiscountAmount(
+          subtotalAfterItemDiscount,
+          discount,
+        );
       });
 
+      totalDiscount += transactionDiscountAmount;
       totalNet = totalGross - totalDiscount;
-
-      if (memberId) {
-        const member = await tx.member.findUnique({
-          where: {
-            id: memberId,
-          },
-        });
-
-        if (!member) {
-          throw new CustomError(404, `Member with ID ${memberId} not found.`);
-        }
-
-        await tx.member.update({
-          where: {
-            id: memberId,
-          },
-          data: {
-            points: member.points + Math.floor(totalNet / 1000),
-          },
-        });
-      }
+      totalProfit -= transactionDiscountAmount;
 
       const transaction = await tx.transaction.create({
         data: {
@@ -261,27 +308,59 @@ const transactionService = {
   }: {
     id: deleteTransactionParams["params"]["id"];
   }) => {
-    await prisma.$transaction(async (tx) => {
-      const transaction = await tx.transaction.findUnique({
-        where: {
-          id,
-        },
-      });
+    try {
+      return await prisma.$transaction(async (tx) => {
+        const transaction = await tx.transaction.findUnique({
+          where: {
+            id,
+          },
+          select: {
+            items: true,
+            status: true,
+          },
+        });
 
-      if (!transaction) {
-        throw new CustomError(404, `Transaction with ID ${id} not found.`);
+        if (!transaction) {
+          throw new CustomError(404, `Transaction with ID ${id} not found.`);
+        }
+
+        if (transaction.status === "CANCELLED") {
+          throw new CustomError(
+            400,
+            `Transaction with ID ${id} is already cancelled.`,
+          );
+        }
+
+        for (const item of transaction.items) {
+          await tx.product.update({
+            where: {
+              id: item.productId,
+            },
+            data: {
+              stock: {
+                increment: item.qty,
+              },
+            },
+          });
+        }
+
+        await tx.transaction.update({
+          where: {
+            id,
+          },
+          data: {
+            status: "CANCELLED",
+          },
+        });
+      });
+    } catch (err) {
+      if (err instanceof Prisma.PrismaClientKnownRequestError) {
+        if (err.code === "P2025") {
+          throw new CustomError(404, `Transaction with ID ${id} not found.`);
+        }
       }
-
-      await tx.transaction.delete({
-        where: {
-          id,
-        },
-      });
-    });
-
-    return {
-      message: `Transaction with ID ${id} has been deleted.`,
-    };
+      throw err;
+    }
   },
 };
 
