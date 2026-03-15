@@ -2,10 +2,7 @@ import { Router } from "express";
 import memberController from "./member.controller.js";
 import memberSchema from "./member.schema.js";
 import { validate } from "../../middlewares/validate.middleware.js";
-import {
-  authorizeRole,
-  isAuthenticated,
-} from "../../middlewares/auth.middleware.js";
+import { isAuthenticated } from "../../middlewares/auth.middleware.js";
 
 const router = Router();
 router.use(isAuthenticated);

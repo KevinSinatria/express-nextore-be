@@ -1,0 +1,963 @@
+openapi: 3.0.0
+info:
+  title: Nextore API
+  description: API Documentation for Nextore Backend
+  version: 1.0.0
+servers:
+  - url: http://localhost:5000
+    description: Development server
+
+tags:
+  - name: Auth
+    description: Authentication endpoints provided by better-auth
+  - name: Products
+    description: Product management endpoints
+  - name: Categories
+    description: Category management endpoints
+  - name: Transactions
+    description: Transaction management endpoints
+  - name: Discounts
+    description: Discount management endpoints
+  - name: Members
+    description: Member management endpoints
+  - name: Users
+    description: User management endpoints (Admin only)
+
+components:
+  securitySchemes:
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: better-auth.session-token
+  schemas:
+    Error:
+      type: object
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
+    Product:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        sku:
+          type: string
+        hpp:
+          type: number
+        price:
+          type: number
+        stock:
+          type: number
+        lowStockThreshold:
+          type: number
+        categoryId:
+          type: string
+        images:
+          type: array
+          items:
+            type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    Category:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    Transaction:
+      type: object
+      properties:
+        id:
+          type: string
+        paymentMethod:
+          type: string
+        memberId:
+          type: string
+        status:
+          type: string
+          enum: [PENDING, SUCCESS, FAILED]
+        totalAmount:
+          type: number
+        userId:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    Discount:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        type:
+          type: string
+          enum: [PERCENTAGE, FIXED]
+        value:
+          type: number
+        startDate:
+          type: string
+          format: date-time
+        endDate:
+          type: string
+          format: date-time
+        isActive:
+          type: boolean
+        isTransactionLevel:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    Member:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        phone:
+          type: string
+        points:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        username:
+          type: string
+        role:
+          type: string
+          enum: [ADMIN, SUPERVISOR, CASHIER]
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+paths:
+  /api/auth/sign-in/username:
+    post:
+      tags:
+        - Auth
+      summary: Sign in with username
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [username, password]
+              properties:
+                username:
+                  type: string
+                password:
+                  type: string
+      responses:
+        "200":
+          description: Successfully signed in
+        "400":
+          description: Invalid credentials
+  /api/auth/sign-out:
+    post:
+      tags:
+        - Auth
+      summary: Sign out
+      responses:
+        "200":
+          description: Successfully signed out
+  /api/auth/get-session:
+    get:
+      tags:
+        - Auth
+      summary: Get current session
+      responses:
+        "200":
+          description: Returns current session and user data
+        "401":
+          description: Not authenticated
+
+  /products:
+    get:
+      tags:
+        - Products
+      summary: Get all products
+      parameters:
+        - in: query
+          name: limit
+          schema:
+            type: string
+            default: "10"
+        - in: query
+          name: page
+          schema:
+            type: string
+            default: "1"
+        - in: query
+          name: search
+          schema:
+            type: string
+        - in: query
+          name: categoryId
+          schema:
+            type: string
+      responses:
+        "200":
+          description: List of products
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Product"
+                  meta:
+                    type: object
+                    properties:
+                      total:
+                        type: integer
+                      page:
+                        type: integer
+                      limit:
+                        type: integer
+    post:
+      tags:
+        - Products
+      summary: Create a new product
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                [name, sku, hpp, price, stock, lowStockThreshold, categoryId]
+              properties:
+                name:
+                  type: string
+                sku:
+                  type: string
+                hpp:
+                  type: number
+                price:
+                  type: number
+                stock:
+                  type: number
+                lowStockThreshold:
+                  type: number
+                categoryId:
+                  type: string
+                images:
+                  type: array
+                  items:
+                    type: string
+                    format: binary
+      responses:
+        "201":
+          description: Product created
+        "400":
+          description: Invalid input
+
+  /products/alert-low-stock:
+    get:
+      tags:
+        - Products
+      summary: Get products with low stock
+      security:
+        - cookieAuth: []
+      responses:
+        "200":
+          description: List of products with low stock
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Product"
+
+  /products/{id}:
+    get:
+      tags:
+        - Products
+      summary: Get product by ID
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Product details
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    $ref: "#/components/schemas/Product"
+        "404":
+          description: Product not found
+    put:
+      tags:
+        - Products
+      summary: Update product
+      security:
+        - cookieAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                sku:
+                  type: string
+                hpp:
+                  type: number
+                price:
+                  type: number
+                stock:
+                  type: number
+                lowStockThreshold:
+                  type: number
+                categoryId:
+                  type: string
+                images:
+                  type: array
+                  items:
+                    type: string
+                    format: binary
+      responses:
+        "200":
+          description: Product updated
+        "404":
+          description: Product not found
+    delete:
+      tags:
+        - Products
+      summary: Delete product
+      security:
+        - cookieAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Product deleted
+        "404":
+          description: Product not found
+
+  /categories:
+    get:
+      tags:
+        - Categories
+      summary: Get all categories
+      parameters:
+        - in: query
+          name: limit
+          schema:
+            type: string
+            default: "10"
+        - in: query
+          name: page
+          schema:
+            type: string
+            default: "1"
+        - in: query
+          name: search
+          schema:
+            type: string
+      responses:
+        "200":
+          description: List of categories
+    post:
+      tags:
+        - Categories
+      summary: Create category
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name]
+              properties:
+                name:
+                  type: string
+      responses:
+        "201":
+          description: Category created
+
+  /categories/{id}:
+    get:
+      tags:
+        - Categories
+      summary: Get category by ID
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Category details
+    put:
+      tags:
+        - Categories
+      summary: Update category
+      security:
+        - cookieAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+      responses:
+        "200":
+          description: Category updated
+    delete:
+      tags:
+        - Categories
+      summary: Delete category
+      security:
+        - cookieAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Category deleted
+
+  /transactions:
+    get:
+      tags:
+        - Transactions
+      summary: Get all transactions
+      parameters:
+        - in: query
+          name: limit
+          schema:
+            type: string
+            default: "10"
+        - in: query
+          name: page
+          schema:
+            type: string
+            default: "1"
+        - in: query
+          name: search
+          schema:
+            type: string
+      responses:
+        "200":
+          description: List of transactions
+    post:
+      tags:
+        - Transactions
+      summary: Create transaction
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [paymentMethod, items]
+              properties:
+                paymentMethod:
+                  type: string
+                memberId:
+                  type: string
+                status:
+                  type: string
+                  enum: [PENDING, SUCCESS, FAILED]
+                items:
+                  type: array
+                  items:
+                    type: object
+                    required: [productId, qty]
+                    properties:
+                      productId:
+                        type: string
+                      qty:
+                        type: integer
+      responses:
+        "201":
+          description: Transaction created
+
+  /transactions/{id}:
+    get:
+      tags:
+        - Transactions
+      summary: Get transaction by ID
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Transaction details
+    delete:
+      tags:
+        - Transactions
+      summary: Delete transaction
+      security:
+        - cookieAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Transaction deleted
+
+  /discounts:
+    get:
+      tags:
+        - Discounts
+      summary: Get all discounts
+      parameters:
+        - in: query
+          name: limit
+          schema:
+            type: string
+            default: "10"
+        - in: query
+          name: page
+          schema:
+            type: string
+            default: "1"
+        - in: query
+          name: search
+          schema:
+            type: string
+        - in: query
+          name: isActive
+          schema:
+            type: boolean
+      responses:
+        "200":
+          description: List of discounts
+    post:
+      tags:
+        - Discounts
+      summary: Create discount
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, value, endDate]
+              properties:
+                name:
+                  type: string
+                description:
+                  type: string
+                type:
+                  type: string
+                  enum: [PERCENTAGE, FIXED]
+                value:
+                  type: number
+                startDate:
+                  type: string
+                  format: date-time
+                endDate:
+                  type: string
+                  format: date-time
+                isActive:
+                  type: boolean
+                isTransactionLevel:
+                  type: boolean
+                productIds:
+                  type: array
+                  items:
+                    type: string
+      responses:
+        "201":
+          description: Discount created
+
+  /discounts/{id}:
+    get:
+      tags:
+        - Discounts
+      summary: Get discount by ID
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Discount details
+    put:
+      tags:
+        - Discounts
+      summary: Update discount
+      security:
+        - cookieAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                description:
+                  type: string
+                type:
+                  type: string
+                value:
+                  type: number
+                startDate:
+                  type: string
+                  format: date-time
+                endDate:
+                  type: string
+                  format: date-time
+                isActive:
+                  type: boolean
+                isTransactionLevel:
+                  type: boolean
+                productIds:
+                  type: array
+                  items:
+                    type: string
+      responses:
+        "200":
+          description: Discount updated
+    delete:
+      tags:
+        - Discounts
+      summary: Delete discount
+      security:
+        - cookieAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Discount deleted
+
+  /members:
+    get:
+      tags:
+        - Members
+      summary: Get all members
+      parameters:
+        - in: query
+          name: limit
+          schema:
+            type: string
+        - in: query
+          name: page
+          schema:
+            type: string
+        - in: query
+          name: search
+          schema:
+            type: string
+      responses:
+        "200":
+          description: List of members
+    post:
+      tags:
+        - Members
+      summary: Create member
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name]
+              properties:
+                name:
+                  type: string
+                phone:
+                  type: string
+      responses:
+        "201":
+          description: Member created
+
+  /members/{id}:
+    get:
+      tags:
+        - Members
+      summary: Get member by ID
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Member details
+    put:
+      tags:
+        - Members
+      summary: Update member
+      security:
+        - cookieAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                phone:
+                  type: string
+                points:
+                  type: integer
+      responses:
+        "200":
+          description: Member updated
+    delete:
+      tags:
+        - Members
+      summary: Delete member
+      security:
+        - cookieAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Member deleted
+
+  /users:
+    get:
+      tags:
+        - Users
+      summary: Get all users
+      security:
+        - cookieAuth: []
+      parameters:
+        - in: query
+          name: limit
+          schema:
+            type: string
+        - in: query
+          name: page
+          schema:
+            type: string
+        - in: query
+          name: search
+          schema:
+            type: string
+      responses:
+        "200":
+          description: List of users
+    post:
+      tags:
+        - Users
+      summary: Create user
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, username, password]
+              properties:
+                name:
+                  type: string
+                username:
+                  type: string
+                password:
+                  type: string
+                role:
+                  type: string
+                  enum: [ADMIN, SUPERVISOR, CASHIER]
+      responses:
+        "201":
+          description: User created
+
+  /users/id/{id}:
+    get:
+      tags:
+        - Users
+      summary: Get user by ID
+      security:
+        - cookieAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: User details
+
+  /users/username/{username}:
+    get:
+      tags:
+        - Users
+      summary: Get user by username
+      security:
+        - cookieAuth: []
+      parameters:
+        - in: path
+          name: username
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: User details
+
+  /users/{id}:
+    put:
+      tags:
+        - Users
+      summary: Update user
+      security:
+        - cookieAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                username:
+                  type: string
+                role:
+                  type: string
+                  enum: [ADMIN, SUPERVISOR, CASHIER]
+      responses:
+        "200":
+          description: User updated
+    delete:
+      tags:
+        - Users
+      summary: Delete user
+      security:
+        - cookieAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: User deleted
