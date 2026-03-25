@@ -1,5 +1,8 @@
 -- CreateEnum
-CREATE TYPE "Role" AS ENUM ('ADMIN', 'SUPERVISOR', 'KASIR');
+CREATE TYPE "Role" AS ENUM ('ADMIN', 'SUPERVISOR', 'CASHIER');
+
+-- CreateEnum
+CREATE TYPE "DiscountType" AS ENUM ('PERCENTAGE', 'FIXED_AMOUNT');
 
 -- CreateEnum
 CREATE TYPE "TransactionStatus" AS ENUM ('COMPLETED', 'PENDING', 'CANCELLED');
@@ -9,9 +12,11 @@ CREATE TABLE "user" (
     "id" TEXT NOT NULL,
     "name" TEXT NOT NULL,
     "image" TEXT,
-    "role" "Role" NOT NULL DEFAULT 'KASIR',
-    "username" TEXT,
-    "password" TEXT,
+    "email" TEXT,
+    "emailVerified" BOOLEAN NOT NULL DEFAULT false,
+    "role" "Role" NOT NULL DEFAULT 'CASHIER',
+    "username" TEXT NOT NULL,
+    "displayUsername" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
@@ -68,6 +73,7 @@ CREATE TABLE "Product" (
     "id" TEXT NOT NULL,
     "sku" TEXT NOT NULL,
     "name" TEXT NOT NULL,
+    "images" TEXT[] DEFAULT ARRAY[]::TEXT[],
     "hpp" DOUBLE PRECISION NOT NULL,
     "price" DOUBLE PRECISION NOT NULL,
     "stock" INTEGER NOT NULL DEFAULT 0,
@@ -77,6 +83,24 @@ CREATE TABLE "Product" (
     "categoryId" TEXT,
 
     CONSTRAINT "Product_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "Discount" (
+    "id" TEXT NOT NULL,
+    "name" TEXT NOT NULL,
+    "description" TEXT,
+    "type" "DiscountType" NOT NULL DEFAULT 'PERCENTAGE',
+    "value" DOUBLE PRECISION NOT NULL,
+    "startDate" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "endDate" TIMESTAMP(3) NOT NULL,
+    "isActive" BOOLEAN NOT NULL DEFAULT true,
+    "isTransactionLevel" BOOLEAN NOT NULL DEFAULT false,
+    "isMemberLevel" BOOLEAN NOT NULL DEFAULT false,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "Discount_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -93,8 +117,7 @@ CREATE TABLE "Category" (
 CREATE TABLE "Member" (
     "id" TEXT NOT NULL,
     "name" TEXT NOT NULL,
-    "phone" TEXT,
-    "points" INTEGER NOT NULL DEFAULT 0,
+    "phone" TEXT NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "Member_pkey" PRIMARY KEY ("id")
@@ -109,7 +132,7 @@ CREATE TABLE "Transaction" (
     "totalNet" DOUBLE PRECISION NOT NULL,
     "totalProfit" DOUBLE PRECISION NOT NULL,
     "paymentMethod" TEXT NOT NULL,
-    "status" "TransactionStatus" NOT NULL DEFAULT 'COMPLETED',
+    "status" "TransactionStatus" NOT NULL DEFAULT 'PENDING',
     "userId" TEXT NOT NULL,
     "memberId" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -125,16 +148,48 @@ CREATE TABLE "TransactionItem" (
     "qty" INTEGER NOT NULL,
     "priceAtSale" DOUBLE PRECISION NOT NULL,
     "hppAtSale" DOUBLE PRECISION NOT NULL,
+    "totalDiscount" DOUBLE PRECISION NOT NULL DEFAULT 0,
     "subtotal" DOUBLE PRECISION NOT NULL,
 
     CONSTRAINT "TransactionItem_pkey" PRIMARY KEY ("id")
 );
 
+-- CreateTable
+CREATE TABLE "_DiscountToProduct" (
+    "A" TEXT NOT NULL,
+    "B" TEXT NOT NULL,
+
+    CONSTRAINT "_DiscountToProduct_AB_pkey" PRIMARY KEY ("A","B")
+);
+
+-- CreateTable
+CREATE TABLE "_DiscountToTransaction" (
+    "A" TEXT NOT NULL,
+    "B" TEXT NOT NULL,
+
+    CONSTRAINT "_DiscountToTransaction_AB_pkey" PRIMARY KEY ("A","B")
+);
+
+-- CreateIndex
+CREATE UNIQUE INDEX "user_email_key" ON "user"("email");
+
 -- CreateIndex
 CREATE UNIQUE INDEX "user_username_key" ON "user"("username");
 
 -- CreateIndex
+CREATE UNIQUE INDEX "user_displayUsername_key" ON "user"("displayUsername");
+
+-- CreateIndex
 CREATE UNIQUE INDEX "session_token_key" ON "session"("token");
+
+-- CreateIndex
+CREATE INDEX "session_userId_idx" ON "session"("userId");
+
+-- CreateIndex
+CREATE INDEX "account_userId_idx" ON "account"("userId");
+
+-- CreateIndex
+CREATE INDEX "verification_identifier_idx" ON "verification"("identifier");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "Product_sku_key" ON "Product"("sku");
@@ -144,6 +199,12 @@ CREATE UNIQUE INDEX "Member_phone_key" ON "Member"("phone");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "Transaction_invoiceNumber_key" ON "Transaction"("invoiceNumber");
+
+-- CreateIndex
+CREATE INDEX "_DiscountToProduct_B_index" ON "_DiscountToProduct"("B");
+
+-- CreateIndex
+CREATE INDEX "_DiscountToTransaction_B_index" ON "_DiscountToTransaction"("B");
 
 -- AddForeignKey
 ALTER TABLE "session" ADD CONSTRAINT "session_userId_fkey" FOREIGN KEY ("userId") REFERENCES "user"("id") ON DELETE CASCADE ON UPDATE CASCADE;
@@ -165,3 +226,15 @@ ALTER TABLE "TransactionItem" ADD CONSTRAINT "TransactionItem_transactionId_fkey
 
 -- AddForeignKey
 ALTER TABLE "TransactionItem" ADD CONSTRAINT "TransactionItem_productId_fkey" FOREIGN KEY ("productId") REFERENCES "Product"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "_DiscountToProduct" ADD CONSTRAINT "_DiscountToProduct_A_fkey" FOREIGN KEY ("A") REFERENCES "Discount"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "_DiscountToProduct" ADD CONSTRAINT "_DiscountToProduct_B_fkey" FOREIGN KEY ("B") REFERENCES "Product"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "_DiscountToTransaction" ADD CONSTRAINT "_DiscountToTransaction_A_fkey" FOREIGN KEY ("A") REFERENCES "Discount"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "_DiscountToTransaction" ADD CONSTRAINT "_DiscountToTransaction_B_fkey" FOREIGN KEY ("B") REFERENCES "Transaction"("id") ON DELETE CASCADE ON UPDATE CASCADE;
