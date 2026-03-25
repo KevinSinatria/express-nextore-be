@@ -78,37 +78,6 @@ components:
         meta:
           type: object
           description: Metadata tambahan seperti pagination (opsional).
-  responses:
-    BadRequest:
-      description: Permintaan tidak valid (Bad Request).
-      content:
-        application/json:
-          schema:
-            $ref: "#/components/schemas/Error"
-    Unauthorized:
-      description: Tidak terautentikasi (Unauthorized).
-      content:
-        application/json:
-          schema:
-            $ref: "#/components/schemas/Error"
-    Forbidden:
-      description: Tidak memiliki izin (Forbidden).
-      content:
-        application/json:
-          schema:
-            $ref: "#/components/schemas/Error"
-    NotFound:
-      description: Sumber daya tidak ditemukan (Not Found).
-      content:
-        application/json:
-          schema:
-            $ref: "#/components/schemas/Error"
-    InternalServerError:
-      description: Kesalahan internal server (Internal Server Error).
-      content:
-        application/json:
-          schema:
-            $ref: "#/components/schemas/Error"
     Product:
       type: object
       required: [id, sku, name, hpp, price, stock, categoryId]
@@ -417,12 +386,50 @@ components:
           description: "Subtotal untuk item ini (setelah diskon)."
           example: 50000
 
+  responses:
+    BadRequest:
+      description: Permintaan tidak valid (Bad Request).
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    Unauthorized:
+      description: Tidak terautentikasi (Unauthorized).
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    Forbidden:
+      description: Tidak memiliki izin (Forbidden).
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    NotFound:
+      description: Sumber daya tidak ditemukan (Not Found).
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    InternalServerError:
+      description: Kesalahan internal server (Internal Server Error).
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    SuccessResponse:
+      description: Operasi berhasil dilakukan.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/SuccessResponse"
+
 paths:
   /api/auth/sign-in/username:
     post:
       tags:
         - Auth
-      summary: Masuk menggunakan username
+      summary: Sign in with username
       operationId: signInWithUsername
       description: Izinkan pengguna untuk masuk ke sistem menggunakan username dan password mereka.
       requestBody:
@@ -455,7 +462,7 @@ paths:
     post:
       tags:
         - Auth
-      summary: Keluar dari sistem
+      summary: Sign out
       operationId: signOut
       description: Mengakhiri sesi pengguna saat ini dan menghapus token autentikasi.
       responses:
@@ -469,7 +476,7 @@ paths:
     get:
       tags:
         - Auth
-      summary: Ambil sesi saat ini
+      summary: Get current session
       operationId: getSession
       description: Mengambil informasi sesi dan data pengguna yang sedang login.
       responses:
@@ -491,7 +498,7 @@ paths:
     get:
       tags:
         - Products
-      summary: Ambil semua produk
+      summary: Get all products
       operationId: getAllProducts
       description: Mengambil daftar semua produk dengan dukungan pagination, pencarian, dan pemfilteran kategori.
       parameters:
@@ -547,7 +554,7 @@ paths:
     post:
       tags:
         - Products
-      summary: Tambah produk baru
+      summary: Create new product
       operationId: createProduct
       description: Membuat produk baru dengan mengunggah gambar dan detail produk.
       security:
@@ -606,7 +613,7 @@ paths:
     get:
       tags:
         - Products
-      summary: Ambil produk stok rendah
+      summary: Get low stock products alert
       operationId: alertLowStock
       description: Mengambil daftar produk yang stoknya sudah mencapai atau di bawah ambang batas stok rendah.
       security:
@@ -634,7 +641,7 @@ paths:
     get:
       tags:
         - Products
-      summary: Ambil produk berdasarkan ID
+      summary: Get product by ID
       operationId: getProductById
       description: Mengambil informasi detail sebuah produk menggunakan ID uniknya.
       parameters:
@@ -665,7 +672,7 @@ paths:
     put:
       tags:
         - Products
-      summary: Perbarui produk
+      summary: Update product
       operationId: updateProduct
       description: Memperbarui informasi produk yang sudah ada, termasuk mengganti gambar jika diperlukan.
       security:
@@ -731,7 +738,7 @@ paths:
     delete:
       tags:
         - Products
-      summary: Hapus produk
+      summary: Delete product
       operationId: deleteProduct
       description: Menghapus produk dari sistem berdasarkan ID. Tindakan ini bersifat permanen.
       security:
@@ -759,7 +766,7 @@ paths:
     get:
       tags:
         - Categories
-      summary: Ambil semua kategori
+      summary: Get all categories
       operationId: getAllCategories
       description: Mengambil daftar semua kategori produk dengan dukungan pagination dan pencarian.
       parameters:
@@ -799,7 +806,7 @@ paths:
     post:
       tags:
         - Categories
-      summary: Tambah kategori baru
+      summary: Create new category
       operationId: createCategory
       description: Membuat kategori produk baru.
       security:
@@ -833,7 +840,7 @@ paths:
     get:
       tags:
         - Categories
-      summary: Ambil kategori berdasarkan ID
+      summary: Get category by ID
       operationId: getCategoryById
       description: Mengambil informasi detail sebuah kategori menggunakan ID uniknya.
       parameters:
@@ -862,7 +869,7 @@ paths:
     put:
       tags:
         - Categories
-      summary: Perbarui kategori
+      summary: Update category
       operationId: updateCategory
       description: Memperbarui nama kategori yang sudah ada.
       security:
@@ -902,7 +909,7 @@ paths:
     delete:
       tags:
         - Categories
-      summary: Hapus kategori
+      summary: Delete category
       operationId: deleteCategory
       description: Menghapus kategori dari sistem. Pastikan tidak ada produk yang masih menggunakan kategori ini.
       security:
@@ -930,7 +937,7 @@ paths:
     get:
       tags:
         - Transactions
-      summary: Ambil semua transaksi
+      summary: Get all transactions
       operationId: getAllTransactions
       description: Mengambil daftar semua transaksi dengan dukungan pagination dan pencarian berdasarkan nomor invoice.
       parameters:
@@ -970,7 +977,7 @@ paths:
     post:
       tags:
         - Transactions
-      summary: Buat transaksi baru
+      summary: Create new transaction
       operationId: createTransaction
       description: Membuat transaksi penjualan baru dengan daftar item produk.
       security:
@@ -1023,7 +1030,7 @@ paths:
     get:
       tags:
         - Transactions
-      summary: Ambil transaksi berdasarkan ID
+      summary: Get transaction by ID
       operationId: getTransactionById
       description: Mengambil informasi detail sebuah transaksi termasuk item-item di dalamnya.
       parameters:
@@ -1052,7 +1059,7 @@ paths:
     delete:
       tags:
         - Transactions
-      summary: Hapus transaksi
+      summary: Delete transaction
       operationId: deleteTransaction
       description: Menghapus data transaksi dari sistem. Hati-hati, tindakan ini akan mempengaruhi laporan keuangan.
       security:
@@ -1080,7 +1087,7 @@ paths:
     get:
       tags:
         - Discounts
-      summary: Ambil semua diskon
+      summary: Get all discounts
       operationId: getAllDiscounts
       description: Mengambil daftar semua program diskon dengan filter status aktif dan pencarian.
       parameters:
@@ -1125,7 +1132,7 @@ paths:
     post:
       tags:
         - Discounts
-      summary: Buat diskon baru
+      summary: Create new discount
       operationId: createDiscount
       description: Membuat program diskon baru, baik untuk level produk maupun transaksi.
       security:
@@ -1187,7 +1194,7 @@ paths:
     get:
       tags:
         - Discounts
-      summary: Ambil diskon berdasarkan ID
+      summary: Get discount by ID
       operationId: getDiscountById
       description: Mengambil informasi detail sebuah program diskon.
       parameters:
@@ -1216,7 +1223,7 @@ paths:
     put:
       tags:
         - Discounts
-      summary: Perbarui diskon
+      summary: Update discount
       operationId: updateDiscount
       description: Memperbarui informasi program diskon yang sudah ada.
       security:
@@ -1275,7 +1282,7 @@ paths:
     delete:
       tags:
         - Discounts
-      summary: Hapus diskon
+      summary: Delete discount
       operationId: deleteDiscount
       description: Menghapus program diskon dari sistem.
       security:
@@ -1303,7 +1310,7 @@ paths:
     get:
       tags:
         - Members
-      summary: Ambil semua member
+      summary: Get all members
       operationId: getAllMembers
       description: Mengambil daftar semua member yang terdaftar dengan dukungan pagination dan pencarian.
       parameters:
@@ -1341,7 +1348,7 @@ paths:
     post:
       tags:
         - Members
-      summary: Tambah member baru
+      summary: Create new member
       operationId: createMember
       description: Mendaftarkan member baru ke dalam sistem.
       security:
@@ -1376,7 +1383,7 @@ paths:
     get:
       tags:
         - Members
-      summary: Ambil member berdasarkan ID
+      summary: Get member by ID
       operationId: getMemberById
       description: Mengambil informasi detail seorang member menggunakan ID uniknya.
       parameters:
@@ -1405,7 +1412,7 @@ paths:
     put:
       tags:
         - Members
-      summary: Perbarui data member
+      summary: Update member
       operationId: updateMember
       description: Memperbarui informasi member yang sudah terdaftar.
       security:
@@ -1447,7 +1454,7 @@ paths:
     delete:
       tags:
         - Members
-      summary: Hapus member
+      summary: Delete member
       operationId: deleteMember
       description: Menghapus member dari sistem.
       security:
@@ -1475,7 +1482,7 @@ paths:
     get:
       tags:
         - Users
-      summary: Ambil semua user (Admin)
+      summary: Get all users (Admin)
       operationId: getAllUsers
       description: Mengambil daftar semua user/staf sistem. Hanya dapat diakses oleh Admin.
       security:
@@ -1519,7 +1526,7 @@ paths:
     post:
       tags:
         - Users
-      summary: Buat user baru (Admin)
+      summary: Create new user (Admin)
       operationId: createUser
       description: Membuat akun user/staf baru dalam sistem. Hanya Admin yang dapat melakukan ini.
       security:
@@ -1571,7 +1578,7 @@ paths:
     get:
       tags:
         - Users
-      summary: Ambil user berdasarkan ID
+      summary: Get user by ID
       operationId: getUserById
       description: Mengambil informasi detail seorang user menggunakan ID uniknya.
       security:
@@ -1606,7 +1613,7 @@ paths:
     get:
       tags:
         - Users
-      summary: Ambil user berdasarkan username
+      summary: Get user by username
       operationId: getUserByUsername
       description: Mengambil informasi detail seorang user menggunakan username uniknya.
       security:
@@ -1641,7 +1648,7 @@ paths:
     put:
       tags:
         - Users
-      summary: Perbarui data user
+      summary: Update user
       operationId: updateUser
       description: Memperbarui informasi akun user yang sudah ada.
       security:
@@ -1688,7 +1695,7 @@ paths:
     delete:
       tags:
         - Users
-      summary: Hapus user
+      summary: Delete user
       operationId: deleteUser
       description: Menghapus akun user dari sistem secara permanen.
       security:
