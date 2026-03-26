@@ -27,7 +27,7 @@ const createMemberSchema = z.object({
 
 const updateMemberSchema = z.object({
   params: z.object({
-    id: z.string().cuid(),
+    id: z.cuid(),
   }),
   body: z.object({
     name: z.string().min(1).optional(),

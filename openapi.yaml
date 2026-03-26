@@ -32,17 +32,30 @@ components:
       in: cookie
       name: better-auth.session-token
   schemas:
+    BaseResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+          description: "Menunjukkan apakah operasi berhasil (true) atau tidak (false)."
+        message:
+          type: string
+          example: "Operasi berhasil dilakukan"
+          description: "Pesan deskriptif mengenai hasil operasi."
+
     Error:
       type: object
       properties:
         success:
           type: boolean
           example: false
-          description: Menunjukkan apakah permintaan berhasil atau tidak.
+          description: "Menunjukkan bahwa permintaan gagal."
         message:
           type: string
           example: "Pesan kesalahan yang menjelaskan apa yang salah"
-          description: Pesan deskriptif tentang kesalahan yang terjadi.
+          description: "Pesan deskriptif tentang kesalahan yang terjadi."
+
     ValidationError:
       type: object
       properties:
@@ -63,30 +76,15 @@ components:
                   type: string
               message:
                 type: string
-    SuccessResponse:
-      type: object
-      properties:
-        success:
-          type: boolean
-          example: true
-          description: Menunjukkan bahwa permintaan berhasil.
-        message:
-          type: string
-          example: "Operasi berhasil dilakukan"
-          description: Pesan kesuksesan dari server.
-        data:
-          type: object
-          description: Data hasil operasi (opsional).
-        meta:
-          type: object
-          description: Metadata tambahan seperti pagination (opsional).
+
     Product:
       type: object
       required: [id, sku, name, hpp, price, stock, categoryId]
       properties:
         id:
           type: string
-          description: "ID unik produk dalam format CUID."
+          format: cuid
+          description: "ID unik produk dalam format CUID (Collision-resistant Unique Identifier)."
           example: "clj1234567890abcdefg"
         sku:
           type: string
@@ -106,10 +104,7 @@ components:
             type: string
             format: uri
           description: "Daftar URL gambar produk."
-          example:
-            [
-              "https://res.cloudinary.com/demo/image/upload/v1234567/product1.jpg",
-            ]
+          example: ["https://example.com/image.jpg"]
         hpp:
           type: number
           description: "Harga Pokok Penjualan (modal)."
@@ -128,24 +123,25 @@ components:
           example: 10
         categoryId:
           type: string
-          description: "ID kategori produk."
+          format: cuid
+          description: "ID kategori produk dalam format CUID."
           example: "cat123456789"
         createdAt:
           type: string
           format: date-time
           description: "Waktu produk dibuat."
-          example: "2023-10-25T14:30:00Z"
         updatedAt:
           type: string
           format: date-time
           description: "Waktu produk terakhir diperbarui."
-          example: "2023-10-25T15:00:00Z"
+
     Category:
       type: object
       required: [id, name]
       properties:
         id:
           type: string
+          format: cuid
           description: "ID unik kategori dalam format CUID."
           example: "cat123456789"
         name:
@@ -153,17 +149,16 @@ components:
           minLength: 3
           maxLength: 100
           description: "Nama kategori."
-          example: "Minuman Kota"
+          example: "Minuman"
         createdAt:
           type: string
           format: date-time
           description: "Waktu kategori dibuat."
-          example: "2023-10-25T14:30:00Z"
         updatedAt:
           type: string
           format: date-time
           description: "Waktu kategori terakhir diperbarui."
-          example: "2023-10-25T15:00:00Z"
+
     Transaction:
       type: object
       required:
@@ -182,6 +177,7 @@ components:
       properties:
         id:
           type: string
+          format: cuid
           description: "ID unik transaksi dalam format CUID."
           example: "tx123456789"
         invoiceNumber:
@@ -210,8 +206,9 @@ components:
           example: "CASH"
         memberId:
           type: string
+          format: cuid
           nullable: true
-          description: "ID member jika transaksi menggunakan member."
+          description: "ID member jika transaksi menggunakan member (format CUID)."
           example: "mem123456789"
         status:
           type: string
@@ -220,30 +217,32 @@ components:
           example: "COMPLETED"
         userId:
           type: string
-          description: "ID user (kasir) yang menangani transaksi."
+          format: cuid
+          description: "ID user (kasir) yang menangani transaksi (format CUID)."
           example: "user123456789"
         createdAt:
           type: string
           format: date-time
           description: "Waktu transaksi dilakukan."
-          example: "2023-10-25T14:30:00Z"
+
     Discount:
       type: object
       required: [id, name, type, value, startDate, endDate, isActive]
       properties:
         id:
           type: string
+          format: cuid
           description: "ID unik diskon dalam format CUID."
           example: "disc123456789"
         name:
           type: string
           description: "Nama program diskon."
-          example: "Promo Grand Opening"
+          example: "Promo Ramadhan"
         description:
           type: string
           nullable: true
           description: "Deskripsi detail mengenai diskon."
-          example: "Diskon 10% untuk semua item di hari pembukaan."
+          example: "Diskon khusus bulan Ramadhan."
         type:
           type: string
           enum: [PERCENTAGE, FIXED_AMOUNT]
@@ -257,12 +256,10 @@ components:
           type: string
           format: date-time
           description: "Waktu mulai berlakunya diskon."
-          example: "2023-10-01T00:00:00Z"
         endDate:
           type: string
           format: date-time
           description: "Waktu berakhirnya diskon."
-          example: "2023-10-31T23:59:59Z"
         isActive:
           type: boolean
           description: "Status apakah diskon sedang aktif atau tidak."
@@ -275,18 +272,18 @@ components:
           type: string
           format: date-time
           description: "Waktu diskon dibuat."
-          example: "2023-10-25T14:30:00Z"
         updatedAt:
           type: string
           format: date-time
           description: "Waktu diskon terakhir diperbarui."
-          example: "2023-10-25T15:00:00Z"
+
     Member:
       type: object
       required: [id, name, createdAt]
       properties:
         id:
           type: string
+          format: cuid
           description: "ID unik member dalam format CUID."
           example: "mem123456789"
         name:
@@ -308,18 +305,14 @@ components:
           type: string
           format: date-time
           description: "Waktu member terdaftar."
-          example: "2023-10-25T14:30:00Z"
-        updatedAt:
-          type: string
-          format: date-time
-          description: "Waktu data member terakhir diperbarui."
-          example: "2023-10-25T15:00:00Z"
+
     User:
       type: object
       required: [id, name, username, role, createdAt, updatedAt]
       properties:
         id:
           type: string
+          format: cuid
           description: "ID unik user/staf dalam format CUID."
           example: "user123456789"
         name:
@@ -344,12 +337,11 @@ components:
           type: string
           format: date-time
           description: "Waktu akun user dibuat."
-          example: "2023-10-25T14:30:00Z"
         updatedAt:
           type: string
           format: date-time
           description: "Waktu akun user terakhir diperbarui."
-          example: "2023-10-25T15:00:00Z"
+
     TransactionItem:
       type: object
       required:
@@ -357,16 +349,19 @@ components:
       properties:
         id:
           type: string
+          format: cuid
           description: "ID unik item transaksi dalam format CUID."
           example: "txi123456789"
         transactionId:
           type: string
-          description: "ID transaksi terkait."
+          format: cuid
+          description: "ID transaksi terkait (format CUID)."
           example: "tx123456789"
         productId:
           type: string
-          description: "ID produk yang terjual."
-          example: "clj1234567890abcdefg"
+          format: cuid
+          description: "ID produk yang terjual (format CUID)."
+          example: "prod123456789"
         qty:
           type: integer
           description: "Jumlah unit produk yang terjual."
@@ -379,14 +374,38 @@ components:
           type: number
           description: "Harga pokok penjualan (modal) pada saat transaksi."
           example: 15000
-        totalDiscount:
-          type: number
-          description: "Total diskon untuk item ini."
-          example: 0
         subtotal:
           type: number
           description: "Subtotal untuk item ini (setelah diskon)."
           example: 50000
+
+    PaginationMeta:
+      type: object
+      properties:
+        page:
+          type: integer
+          description: "Nomor halaman saat ini."
+          example: 1
+        limit:
+          type: integer
+          description: "Jumlah data per halaman."
+          example: 10
+        totalItems:
+          type: integer
+          description: "Total keseluruhan data yang tersedia."
+          example: 150
+        totalPages:
+          type: integer
+          description: "Total keseluruhan halaman yang tersedia."
+          example: 15
+        hasNextPage:
+          type: boolean
+          description: "Apakah ada halaman berikutnya."
+          example: true
+        hasPrevPage:
+          type: boolean
+          description: "Apakah ada halaman sebelumnya."
+          example: false
 
   responses:
     BadRequest:
@@ -419,21 +438,15 @@ components:
         application/json:
           schema:
             $ref: "#/components/schemas/Error"
-    SuccessResponse:
-      description: Operasi berhasil dilakukan.
-      content:
-        application/json:
-          schema:
-            $ref: "#/components/schemas/SuccessResponse"
 
 paths:
   /api/auth/sign-in/username:
     post:
       tags:
         - Auth
-      summary: Sign in with username
+      summary: "Masuk dengan username"
       operationId: signInWithUsername
-      description: Izinkan pengguna untuk masuk ke sistem menggunakan username dan password mereka.
+      description: "Melakukan autentikasi pengguna ke dalam sistem menggunakan kombinasi username dan kata sandi."
       requestBody:
         required: true
         content:
@@ -444,91 +457,48 @@ paths:
               properties:
                 username:
                   type: string
+                  description: "Username unik akun pengguna."
                   example: "andi_cashier"
                 password:
                   type: string
                   format: password
+                  description: "Kata sandi akun pengguna."
                   example: "Password123"
       responses:
         "200":
-          description: Berhasil masuk ke sistem.
+          description: "Berhasil masuk ke sistem."
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/SuccessResponse"
+                allOf:
+                  - $ref: "#/components/schemas/BaseResponse"
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        required: [token, user]
+                        properties:
+                          token:
+                            type: string
+                            description: "Token autentikasi sesi."
+                            example: "cIvDQ09nW7aFVTyE3h79KqPwnfhV6Ddr"
+                          user:
+                            $ref: "#/components/schemas/User"
         "400":
           $ref: "#/components/responses/BadRequest"
         "401":
           $ref: "#/components/responses/Unauthorized"
+
   /api/auth/sign-out:
     post:
       tags:
         - Auth
-      summary: Sign out
+      summary: "Keluar dari sistem"
       operationId: signOut
-      description: Mengakhiri sesi pengguna saat ini dan menghapus token autentikasi.
+      description: "Mengakhiri sesi aktif pengguna dan menghapus token autentikasi dari browser."
       responses:
         "200":
-          description: Berhasil keluar dari sistem.
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/SuccessResponse"
-  /api/auth/get-session:
-    get:
-      tags:
-        - Auth
-      summary: Get current session
-      operationId: getSession
-      description: Mengambil informasi sesi dan data pengguna yang sedang login.
-      responses:
-        "200":
-          description: Data sesi dan pengguna ditemukan.
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  session:
-                    type: object
-                  user:
-                    $ref: "#/components/schemas/User"
-        "401":
-          $ref: "#/components/responses/Unauthorized"
-
-  /products:
-    get:
-      tags:
-        - Products
-      summary: Get all products
-      operationId: getAllProducts
-      description: Mengambil daftar semua produk dengan dukungan pagination, pencarian, dan pemfilteran kategori.
-      parameters:
-        - in: query
-          name: limit
-          schema:
-            type: string
-            default: "10"
-          description: "Jumlah item per halaman."
-        - in: query
-          name: page
-          schema:
-            type: string
-            default: "1"
-          description: "Nomor halaman."
-        - in: query
-          name: search
-          schema:
-            type: string
-          description: "Pencarian berdasarkan nama atau SKU."
-        - in: query
-          name: categoryId
-          schema:
-            type: string
-          description: "Filter berdasarkan ID kategori."
-      responses:
-        "200":
-          description: Daftar produk berhasil diambil.
+          description: "Berhasil keluar dari sistem."
           content:
             application/json:
               schema:
@@ -536,29 +506,116 @@ paths:
                 properties:
                   success:
                     type: boolean
-                  message:
-                    type: string
-                  data:
-                    type: array
-                    items:
-                      $ref: "#/components/schemas/Product"
-                  meta:
-                    type: object
+                    description: "Status keberhasilan operasi."
+                    example: true
+
+  /api/auth/get-session:
+    get:
+      tags:
+        - Auth
+      summary: "Ambil sesi saat ini"
+      operationId: getSession
+      description: "Mendapatkan informasi detail mengenai sesi aktif dan data profil pengguna yang sedang masuk."
+      responses:
+        "200":
+          description: "Data sesi berhasil ditemukan."
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/BaseResponse"
+                  - type: object
                     properties:
-                      total:
-                        type: integer
-                      page:
-                        type: integer
-                      limit:
-                        type: integer
+                      data:
+                        type: object
+                        required: [userData, user, session]
+                        properties:
+                          userData:
+                            $ref: "#/components/schemas/User"
+                          user:
+                            $ref: "#/components/schemas/User"
+                          session:
+                            type: object
+                            properties:
+                              id:
+                                type: string
+                                format: cuid
+                              token:
+                                type: string
+                              userId:
+                                type: string
+                                format: cuid
+                              expiresAt:
+                                type: string
+                                format: date-time
+                              createdAt:
+                                type: string
+                                format: date-time
+                              updatedAt:
+                                type: string
+                                format: date-time
+                              ipAddress:
+                                type: string
+                              userAgent:
+                                type: string
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /products:
+    get:
+      tags:
+        - Products
+      summary: "Ambil semua produk"
+      operationId: getAllProducts
+      description: "Mengambil daftar produk dengan dukungan pencarian, pemfilteran kategori, dan paginasi."
+      parameters:
+        - in: query
+          name: limit
+          schema:
+            type: string
+            default: "10"
+          description: "Jumlah data per halaman."
+        - in: query
+          name: page
+          schema:
+            type: string
+            default: "1"
+          description: "Nomor halaman yang ingin diambil."
+        - in: query
+          name: search
+          schema:
+            type: string
+          description: "Pencarian berdasarkan nama produk atau SKU."
+        - in: query
+          name: categoryId
+          schema:
+            type: string
+            format: cuid
+          description: "Filter produk berdasarkan ID kategori (format CUID)."
+      responses:
+        "200":
+          description: "Daftar produk berhasil diambil."
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/BaseResponse"
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/Product"
+                      meta:
+                        $ref: "#/components/schemas/PaginationMeta"
         "500":
           $ref: "#/components/responses/InternalServerError"
     post:
       tags:
         - Products
-      summary: Create new product
+      summary: "Tambah produk baru"
       operationId: createProduct
-      description: Membuat produk baru dengan mengunggah gambar dan detail produk.
+      description: "Menambahkan produk baru ke dalam inventori toko beserta unggahan gambar."
       security:
         - cookieAuth: []
       requestBody:
@@ -573,69 +630,81 @@ paths:
                   type: string
                   minLength: 3
                   maxLength: 100
+                  description: "Nama produk."
                   example: "Kopi Susu Gula Aren"
                 sku:
                   type: string
                   minLength: 3
                   maxLength: 100
+                  description: "Kode SKU produk."
                   example: "KOPI-001"
                 hpp:
                   type: number
+                  description: "Harga Pokok Penjualan (modal)."
                   example: 15000
                 price:
                   type: number
+                  description: "Harga jual produk."
                   example: 25000
                 stock:
                   type: number
+                  description: "Jumlah stok awal."
                   example: 50
                 lowStockThreshold:
                   type: number
+                  description: "Ambang batas stok rendah."
                   example: 10
                 categoryId:
                   type: string
+                  format: cuid
+                  description: "ID kategori produk (format CUID)."
                   example: "cat123456789"
                 images:
                   type: array
                   items:
                     type: string
                     format: binary
-                  description: "File gambar produk (maksimal beberapa file)."
+                  description: "File gambar produk (format file)."
       responses:
         "201":
-          description: Produk berhasil dibuat.
+          description: "Produk berhasil ditambahkan."
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/SuccessResponse"
+                allOf:
+                  - $ref: "#/components/schemas/BaseResponse"
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/Product"
         "400":
           $ref: "#/components/responses/BadRequest"
         "401":
           $ref: "#/components/responses/Unauthorized"
+
   /products/alert-low-stock:
     get:
       tags:
         - Products
-      summary: Get low stock products alert
+      summary: "Ambil peringatan stok rendah"
       operationId: alertLowStock
-      description: Mengambil daftar produk yang stoknya sudah mencapai atau di bawah ambang batas stok rendah.
+      description: "Mengambil daftar produk yang stoknya sudah mencapai atau berada di bawah ambang batas stok rendah."
       security:
         - cookieAuth: []
       responses:
         "200":
-          description: Daftar produk stok rendah berhasil diambil.
+          description: "Daftar produk stok rendah berhasil diambil."
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  success:
-                    type: boolean
-                  message:
-                    type: string
-                  data:
-                    type: array
-                    items:
-                      $ref: "#/components/schemas/Product"
+                allOf:
+                  - $ref: "#/components/schemas/BaseResponse"
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/Product"
         "401":
           $ref: "#/components/responses/Unauthorized"
 
@@ -643,30 +712,29 @@ paths:
     get:
       tags:
         - Products
-      summary: Get product by ID
+      summary: "Ambil detail produk"
       operationId: getProductById
-      description: Mengambil informasi detail sebuah produk menggunakan ID uniknya.
+      description: "Mendapatkan informasi lengkap mengenai sebuah produk berdasarkan ID uniknya."
       parameters:
         - in: path
           name: id
           required: true
           schema:
             type: string
-          description: "ID unik produk (CUID)."
+            format: cuid
+          description: "ID unik produk (format CUID)."
       responses:
         "200":
-          description: Detail produk berhasil ditemukan.
+          description: "Detail produk berhasil ditemukan."
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  success:
-                    type: boolean
-                  message:
-                    type: string
-                  data:
-                    $ref: "#/components/schemas/Product"
+                allOf:
+                  - $ref: "#/components/schemas/BaseResponse"
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/Product"
         "404":
           $ref: "#/components/responses/NotFound"
         "500":
@@ -674,9 +742,9 @@ paths:
     put:
       tags:
         - Products
-      summary: Update product
+      summary: "Perbarui produk"
       operationId: updateProduct
-      description: Memperbarui informasi produk yang sudah ada, termasuk mengganti gambar jika diperlukan.
+      description: "Memperbarui data produk yang sudah ada, termasuk informasi harga, stok, dan gambar."
       security:
         - cookieAuth: []
       parameters:
@@ -685,7 +753,8 @@ paths:
           required: true
           schema:
             type: string
-          description: "ID unik produk yang akan diperbarui."
+            format: cuid
+          description: "ID unik produk yang akan diperbarui (format CUID)."
       requestBody:
         required: true
         content:
@@ -697,6 +766,7 @@ paths:
                   type: string
                   minLength: 3
                   maxLength: 100
+                  description: "Nama produk baru."
                   example: "Kopi Susu Gula Aren Spesial"
                 sku:
                   type: string
@@ -717,20 +787,27 @@ paths:
                   example: 15
                 categoryId:
                   type: string
+                  format: cuid
+                  description: "ID kategori baru (format CUID)."
                   example: "cat123456789"
                 images:
                   type: array
                   items:
                     type: string
                     format: binary
-                  description: "File gambar baru produk (opsional)."
+                  description: "Unggah gambar baru untuk mengganti gambar lama."
       responses:
         "200":
-          description: Produk berhasil diperbarui.
+          description: "Produk berhasil diperbarui."
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/SuccessResponse"
+                allOf:
+                  - $ref: "#/components/schemas/BaseResponse"
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/Product"
         "400":
           $ref: "#/components/responses/BadRequest"
         "401":
@@ -740,9 +817,9 @@ paths:
     delete:
       tags:
         - Products
-      summary: Delete product
+      summary: "Hapus produk"
       operationId: deleteProduct
-      description: Menghapus produk dari sistem berdasarkan ID. Tindakan ini bersifat permanen.
+      description: "Menghapus produk secara permanen dari sistem berdasarkan ID."
       security:
         - cookieAuth: []
       parameters:
@@ -751,14 +828,15 @@ paths:
           required: true
           schema:
             type: string
-          description: "ID unik produk yang akan dihapus."
+            format: cuid
+          description: "ID unik produk yang akan dihapus (format CUID)."
       responses:
         "200":
-          description: Produk berhasil dihapus.
+          description: "Produk berhasil dihapus."
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/SuccessResponse"
+                $ref: "#/components/schemas/BaseResponse"
         "401":
           $ref: "#/components/responses/Unauthorized"
         "404":
@@ -768,22 +846,22 @@ paths:
     get:
       tags:
         - Categories
-      summary: Get all categories
+      summary: "Ambil semua kategori"
       operationId: getAllCategories
-      description: Mengambil daftar semua kategori produk dengan dukungan pagination dan pencarian.
+      description: "Mengambil daftar semua kategori produk dengan dukungan paginasi dan pencarian berdasarkan nama."
       parameters:
         - in: query
           name: limit
           schema:
             type: string
             default: "10"
-          description: "Jumlah item per halaman."
+          description: "Jumlah data per halaman."
         - in: query
           name: page
           schema:
             type: string
             default: "1"
-          description: "Nomor halaman."
+          description: "Nomor halaman yang ingin diambil."
         - in: query
           name: search
           schema:
@@ -791,26 +869,26 @@ paths:
           description: "Pencarian berdasarkan nama kategori."
       responses:
         "200":
-          description: Daftar kategori berhasil diambil.
+          description: "Daftar kategori berhasil diambil."
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  success:
-                    type: boolean
-                  message:
-                    type: string
-                  data:
-                    type: array
-                    items:
-                      $ref: "#/components/schemas/Category"
+                allOf:
+                  - $ref: "#/components/schemas/BaseResponse"
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/Category"
+                      meta:
+                        $ref: "#/components/schemas/PaginationMeta"
     post:
       tags:
         - Categories
-      summary: Create new category
+      summary: "Tambah kategori baru"
       operationId: createCategory
-      description: Membuat kategori produk baru.
+      description: "Membuat kategori produk baru ke dalam sistem."
       security:
         - cookieAuth: []
       requestBody:
@@ -825,14 +903,20 @@ paths:
                   type: string
                   minLength: 3
                   maxLength: 100
+                  description: "Nama kategori baru."
                   example: "Makanan Ringan"
       responses:
         "201":
-          description: Kategori berhasil dibuat.
+          description: "Kategori berhasil dibuat."
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/SuccessResponse"
+                allOf:
+                  - $ref: "#/components/schemas/BaseResponse"
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/Category"
         "400":
           $ref: "#/components/responses/BadRequest"
         "401":
@@ -842,38 +926,37 @@ paths:
     get:
       tags:
         - Categories
-      summary: Get category by ID
+      summary: "Ambil detail kategori"
       operationId: getCategoryById
-      description: Mengambil informasi detail sebuah kategori menggunakan ID uniknya.
+      description: "Mendapatkan informasi lengkap mengenai sebuah kategori berdasarkan ID uniknya."
       parameters:
         - in: path
           name: id
           required: true
           schema:
             type: string
-          description: "ID unik kategori."
+            format: cuid
+          description: "ID unik kategori (format CUID)."
       responses:
         "200":
-          description: Detail kategori berhasil ditemukan.
+          description: "Detail kategori berhasil ditemukan."
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  success:
-                    type: boolean
-                  message:
-                    type: string
-                  data:
-                    $ref: "#/components/schemas/Category"
+                allOf:
+                  - $ref: "#/components/schemas/BaseResponse"
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/Category"
         "404":
           $ref: "#/components/responses/NotFound"
     put:
       tags:
         - Categories
-      summary: Update category
+      summary: "Perbarui kategori"
       operationId: updateCategory
-      description: Memperbarui nama kategori yang sudah ada.
+      description: "Memperbarui nama atau informasi kategori yang sudah ada."
       security:
         - cookieAuth: []
       parameters:
@@ -882,7 +965,8 @@ paths:
           required: true
           schema:
             type: string
-          description: "ID unik kategori yang akan diperbarui."
+            format: cuid
+          description: "ID unik kategori yang akan diperbarui (format CUID)."
       requestBody:
         required: true
         content:
@@ -894,14 +978,20 @@ paths:
                   type: string
                   minLength: 3
                   maxLength: 100
+                  description: "Nama kategori baru."
                   example: "Snack & Cemilan"
       responses:
         "200":
-          description: Kategori berhasil diperbarui.
+          description: "Kategori berhasil diperbarui."
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/SuccessResponse"
+                allOf:
+                  - $ref: "#/components/schemas/BaseResponse"
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/Category"
         "400":
           $ref: "#/components/responses/BadRequest"
         "401":
@@ -911,9 +1001,9 @@ paths:
     delete:
       tags:
         - Categories
-      summary: Delete category
+      summary: "Hapus kategori"
       operationId: deleteCategory
-      description: Menghapus kategori dari sistem. Pastikan tidak ada produk yang masih menggunakan kategori ini.
+      description: "Menghapus kategori dari sistem. Pastikan tidak ada produk yang masih terkait dengan kategori ini."
       security:
         - cookieAuth: []
       parameters:
@@ -922,14 +1012,15 @@ paths:
           required: true
           schema:
             type: string
-          description: "ID unik kategori yang akan dihapus."
+            format: cuid
+          description: "ID unik kategori yang akan dihapus (format CUID)."
       responses:
         "200":
-          description: Kategori berhasil dihapus.
+          description: "Kategori berhasil dihapus."
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/SuccessResponse"
+                $ref: "#/components/schemas/BaseResponse"
         "401":
           $ref: "#/components/responses/Unauthorized"
         "404":
@@ -939,22 +1030,22 @@ paths:
     get:
       tags:
         - Transactions
-      summary: Get all transactions
+      summary: "Ambil semua transaksi"
       operationId: getAllTransactions
-      description: Mengambil daftar semua transaksi dengan dukungan pagination dan pencarian berdasarkan nomor invoice.
+      description: "Mengambil daftar semua transaksi dengan dukungan paginasi dan pencarian berdasarkan nomor invoice."
       parameters:
         - in: query
           name: limit
           schema:
             type: string
             default: "10"
-          description: "Jumlah item per halaman."
+          description: "Jumlah data per halaman."
         - in: query
           name: page
           schema:
             type: string
             default: "1"
-          description: "Nomor halaman."
+          description: "Nomor halaman yang ingin diambil."
         - in: query
           name: search
           schema:
@@ -962,26 +1053,26 @@ paths:
           description: "Pencarian berdasarkan nomor invoice."
       responses:
         "200":
-          description: Daftar transaksi berhasil diambil.
+          description: "Daftar transaksi berhasil diambil."
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  success:
-                    type: boolean
-                  message:
-                    type: string
-                  data:
-                    type: array
-                    items:
-                      $ref: "#/components/schemas/Transaction"
+                allOf:
+                  - $ref: "#/components/schemas/BaseResponse"
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/Transaction"
+                      meta:
+                        $ref: "#/components/schemas/PaginationMeta"
     post:
       tags:
         - Transactions
-      summary: Create new transaction
+      summary: "Tambah transaksi baru"
       operationId: createTransaction
-      description: Membuat transaksi penjualan baru dengan daftar item produk.
+      description: "Membuat transaksi penjualan baru dengan daftar item produk dan metode pembayaran."
       security:
         - cookieAuth: []
       requestBody:
@@ -994,35 +1085,47 @@ paths:
               properties:
                 paymentMethod:
                   type: string
+                  description: "Metode pembayaran (misal: CASH, QRIS)."
                   example: "CASH"
                 memberId:
                   type: string
+                  format: cuid
+                  description: "ID member jika ada (format CUID, opsional)."
                   example: "mem123456789"
-                  description: "ID member jika ada (opsional)."
                 status:
                   type: string
                   enum: [PENDING, COMPLETED, CANCELLED]
                   default: PENDING
+                  description: "Status awal transaksi."
                   example: "COMPLETED"
                 items:
                   type: array
+                  description: "Daftar produk yang dibeli."
                   items:
                     type: object
                     required: [productId, qty]
                     properties:
                       productId:
                         type: string
-                        example: "clj1234567890abcdefg"
+                        format: cuid
+                        description: "ID produk (format CUID)."
+                        example: "prod123456789"
                       qty:
                         type: integer
+                        description: "Jumlah unit yang dibeli."
                         example: 2
       responses:
         "201":
-          description: Transaksi berhasil dibuat.
+          description: "Transaksi berhasil dibuat."
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/SuccessResponse"
+                allOf:
+                  - $ref: "#/components/schemas/BaseResponse"
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/Transaction"
         "400":
           $ref: "#/components/responses/BadRequest"
         "401":
@@ -1032,38 +1135,37 @@ paths:
     get:
       tags:
         - Transactions
-      summary: Get transaction by ID
+      summary: "Ambil detail transaksi"
       operationId: getTransactionById
-      description: Mengambil informasi detail sebuah transaksi termasuk item-item di dalamnya.
+      description: "Mendapatkan informasi detail mengenai sebuah transaksi termasuk semua item yang terjual."
       parameters:
         - in: path
           name: id
           required: true
           schema:
             type: string
-          description: "ID unik transaksi."
+            format: cuid
+          description: "ID unik transaksi (format CUID)."
       responses:
         "200":
-          description: Detail transaksi berhasil ditemukan.
+          description: "Detail transaksi berhasil ditemukan."
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  success:
-                    type: boolean
-                  message:
-                    type: string
-                  data:
-                    $ref: "#/components/schemas/Transaction"
+                allOf:
+                  - $ref: "#/components/schemas/BaseResponse"
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/Transaction"
         "404":
           $ref: "#/components/responses/NotFound"
     delete:
       tags:
         - Transactions
-      summary: Delete transaction
+      summary: "Hapus transaksi"
       operationId: deleteTransaction
-      description: Menghapus data transaksi dari sistem. Hati-hati, tindakan ini akan mempengaruhi laporan keuangan.
+      description: "Menghapus data transaksi dari sistem secara permanen."
       security:
         - cookieAuth: []
       parameters:
@@ -1072,14 +1174,15 @@ paths:
           required: true
           schema:
             type: string
-          description: "ID unik transaksi yang akan dihapus."
+            format: cuid
+          description: "ID unik transaksi yang akan dihapus (format CUID)."
       responses:
         "200":
-          description: Transaksi berhasil dihapus.
+          description: "Transaksi berhasil dihapus."
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/SuccessResponse"
+                $ref: "#/components/schemas/BaseResponse"
         "401":
           $ref: "#/components/responses/Unauthorized"
         "404":
@@ -1089,16 +1192,16 @@ paths:
     get:
       tags:
         - Discounts
-      summary: Get all discounts
+      summary: "Ambil semua diskon"
       operationId: getAllDiscounts
-      description: Mengambil daftar semua program diskon dengan filter status aktif dan pencarian.
+      description: "Mengambil daftar semua program diskon dengan filter status aktif dan pencarian nama."
       parameters:
         - in: query
           name: limit
           schema:
             type: string
             default: "10"
-          description: "Jumlah item per halaman."
+          description: "Jumlah data per halaman."
         - in: query
           name: page
           schema:
@@ -1114,29 +1217,29 @@ paths:
           name: isActive
           schema:
             type: boolean
-          description: "Filter berdasarkan status aktif (true/false)."
+          description: "Filter berdasarkan status aktif."
       responses:
         "200":
-          description: Daftar diskon berhasil diambil.
+          description: "Daftar diskon berhasil diambil."
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  success:
-                    type: boolean
-                  message:
-                    type: string
-                  data:
-                    type: array
-                    items:
-                      $ref: "#/components/schemas/Discount"
+                allOf:
+                  - $ref: "#/components/schemas/BaseResponse"
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/Discount"
+                      meta:
+                        $ref: "#/components/schemas/PaginationMeta"
     post:
       tags:
         - Discounts
-      summary: Create new discount
+      summary: "Tambah diskon baru"
       operationId: createDiscount
-      description: Membuat program diskon baru, baik untuk level produk maupun transaksi.
+      description: "Membuat program diskon baru untuk produk tertentu atau level transaksi."
       security:
         - cookieAuth: []
       requestBody:
@@ -1149,44 +1252,58 @@ paths:
               properties:
                 name:
                   type: string
+                  description: "Nama program diskon."
                   example: "Promo Akhir Tahun"
                 description:
                   type: string
-                  example: "Diskon cuci gudang akhir tahun 2023."
+                  description: "Deskripsi detail mengenai diskon."
+                  example: "Diskon cuci gudang akhir tahun."
                 type:
                   type: string
                   enum: [PERCENTAGE, FIXED_AMOUNT]
+                  description: "Tipe diskon (persentase atau nominal tetap)."
                   example: "PERCENTAGE"
                 value:
                   type: number
+                  description: "Nilai diskon."
                   example: 15
                 startDate:
                   type: string
                   format: date-time
+                  description: "Waktu mulai diskon."
                   example: "2023-12-01T00:00:00Z"
                 endDate:
                   type: string
                   format: date-time
+                  description: "Waktu berakhir diskon."
                   example: "2023-12-31T23:59:59Z"
                 isActive:
                   type: boolean
                   default: true
+                  description: "Status keaktifan diskon."
                 isTransactionLevel:
                   type: boolean
                   default: false
+                  description: "Apakah berlaku untuk seluruh transaksi."
                 productIds:
                   type: array
                   items:
                     type: string
+                    format: cuid
+                  description: "Daftar ID produk yang mendapatkan diskon (format CUID)."
                   example: ["prod123", "prod456"]
-                  description: "Daftar ID produk jika diskon level produk (opsional)."
       responses:
         "201":
-          description: Diskon berhasil dibuat.
+          description: "Diskon berhasil dibuat."
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/SuccessResponse"
+                allOf:
+                  - $ref: "#/components/schemas/BaseResponse"
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/Discount"
         "400":
           $ref: "#/components/responses/BadRequest"
         "401":
@@ -1196,38 +1313,37 @@ paths:
     get:
       tags:
         - Discounts
-      summary: Get discount by ID
+      summary: "Ambil detail diskon"
       operationId: getDiscountById
-      description: Mengambil informasi detail sebuah program diskon.
+      description: "Mendapatkan informasi lengkap mengenai sebuah program diskon berdasarkan ID."
       parameters:
         - in: path
           name: id
           required: true
           schema:
             type: string
-          description: "ID unik diskon."
+            format: cuid
+          description: "ID unik diskon (format CUID)."
       responses:
         "200":
-          description: Detail diskon berhasil ditemukan.
+          description: "Detail diskon berhasil ditemukan."
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  success:
-                    type: boolean
-                  message:
-                    type: string
-                  data:
-                    $ref: "#/components/schemas/Discount"
+                allOf:
+                  - $ref: "#/components/schemas/BaseResponse"
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/Discount"
         "404":
           $ref: "#/components/responses/NotFound"
     put:
       tags:
         - Discounts
-      summary: Update discount
+      summary: "Perbarui diskon"
       operationId: updateDiscount
-      description: Memperbarui informasi program diskon yang sudah ada.
+      description: "Memperbarui informasi program diskon yang sudah ada."
       security:
         - cookieAuth: []
       parameters:
@@ -1236,7 +1352,8 @@ paths:
           required: true
           schema:
             type: string
-          description: "ID unik diskon yang akan diperbarui."
+            format: cuid
+          description: "ID unik diskon yang akan diperbarui (format CUID)."
       requestBody:
         required: true
         content:
@@ -1268,13 +1385,19 @@ paths:
                   type: array
                   items:
                     type: string
+                    format: cuid
       responses:
         "200":
-          description: Diskon berhasil diperbarui.
+          description: "Diskon berhasil diperbarui."
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/SuccessResponse"
+                allOf:
+                  - $ref: "#/components/schemas/BaseResponse"
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/Discount"
         "400":
           $ref: "#/components/responses/BadRequest"
         "401":
@@ -1284,9 +1407,9 @@ paths:
     delete:
       tags:
         - Discounts
-      summary: Delete discount
+      summary: "Hapus diskon"
       operationId: deleteDiscount
-      description: Menghapus program diskon dari sistem.
+      description: "Menghapus program diskon dari sistem secara permanen."
       security:
         - cookieAuth: []
       parameters:
@@ -1295,14 +1418,15 @@ paths:
           required: true
           schema:
             type: string
-          description: "ID unik diskon yang akan dihapus."
+            format: cuid
+          description: "ID unik diskon yang akan dihapus (format CUID)."
       responses:
         "200":
-          description: Diskon berhasil dihapus.
+          description: "Diskon berhasil dihapus."
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/SuccessResponse"
+                $ref: "#/components/schemas/BaseResponse"
         "401":
           $ref: "#/components/responses/Unauthorized"
         "404":
@@ -1312,15 +1436,15 @@ paths:
     get:
       tags:
         - Members
-      summary: Get all members
+      summary: "Ambil semua member"
       operationId: getAllMembers
-      description: Mengambil daftar semua member yang terdaftar dengan dukungan pagination dan pencarian.
+      description: "Mengambil daftar semua member terdaftar dengan dukungan paginasi dan pencarian."
       parameters:
         - in: query
           name: limit
           schema:
             type: string
-          description: "Jumlah item per halaman."
+          description: "Jumlah data per halaman."
         - in: query
           name: page
           schema:
@@ -1333,26 +1457,26 @@ paths:
           description: "Pencarian berdasarkan nama atau nomor telepon member."
       responses:
         "200":
-          description: Daftar member berhasil diambil.
+          description: "Daftar member berhasil diambil."
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  success:
-                    type: boolean
-                  message:
-                    type: string
-                  data:
-                    type: array
-                    items:
-                      $ref: "#/components/schemas/Member"
+                allOf:
+                  - $ref: "#/components/schemas/BaseResponse"
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/Member"
+                      meta:
+                        $ref: "#/components/schemas/PaginationMeta"
     post:
       tags:
         - Members
-      summary: Create new member
+      summary: "Tambah member baru"
       operationId: createMember
-      description: Mendaftarkan member baru ke dalam sistem.
+      description: "Mendaftarkan member pelanggan baru ke dalam sistem."
       security:
         - cookieAuth: []
       requestBody:
@@ -1365,17 +1489,24 @@ paths:
               properties:
                 name:
                   type: string
+                  description: "Nama lengkap member."
                   example: "Budi Santoso"
                 phone:
                   type: string
+                  description: "Nomor telepon aktif."
                   example: "081234567890"
       responses:
         "201":
-          description: Member berhasil terdaftar.
+          description: "Member berhasil terdaftar."
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/SuccessResponse"
+                allOf:
+                  - $ref: "#/components/schemas/BaseResponse"
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/Member"
         "400":
           $ref: "#/components/responses/BadRequest"
         "401":
@@ -1385,38 +1516,37 @@ paths:
     get:
       tags:
         - Members
-      summary: Get member by ID
+      summary: "Ambil detail member"
       operationId: getMemberById
-      description: Mengambil informasi detail seorang member menggunakan ID uniknya.
+      description: "Mendapatkan informasi detail mengenai seorang member berdasarkan ID."
       parameters:
         - in: path
           name: id
           required: true
           schema:
             type: string
-          description: "ID unik member."
+            format: cuid
+          description: "ID unik member (format CUID)."
       responses:
         "200":
-          description: Detail member berhasil ditemukan.
+          description: "Detail member berhasil ditemukan."
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  success:
-                    type: boolean
-                  message:
-                    type: string
-                  data:
-                    $ref: "#/components/schemas/Member"
+                allOf:
+                  - $ref: "#/components/schemas/BaseResponse"
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/Member"
         "404":
           $ref: "#/components/responses/NotFound"
     put:
       tags:
         - Members
-      summary: Update member
+      summary: "Perbarui member"
       operationId: updateMember
-      description: Memperbarui informasi member yang sudah terdaftar.
+      description: "Memperbarui informasi profil member pelanggan."
       security:
         - cookieAuth: []
       parameters:
@@ -1425,7 +1555,8 @@ paths:
           required: true
           schema:
             type: string
-          description: "ID unik member yang akan diperbarui."
+            format: cuid
+          description: "ID unik member yang akan diperbarui (format CUID)."
       requestBody:
         required: true
         content:
@@ -1435,18 +1566,26 @@ paths:
               properties:
                 name:
                   type: string
+                  description: "Nama lengkap baru."
                   example: "Budi Santoso (Updated)"
                 phone:
                   type: string
+                  description: "Nomor telepon baru."
                 points:
                   type: integer
+                  description: "Jumlah poin member."
       responses:
         "200":
-          description: Data member berhasil diperbarui.
+          description: "Data member berhasil diperbarui."
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/SuccessResponse"
+                allOf:
+                  - $ref: "#/components/schemas/BaseResponse"
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/Member"
         "400":
           $ref: "#/components/responses/BadRequest"
         "401":
@@ -1456,9 +1595,9 @@ paths:
     delete:
       tags:
         - Members
-      summary: Delete member
+      summary: "Hapus member"
       operationId: deleteMember
-      description: Menghapus member dari sistem.
+      description: "Menghapus data member dari sistem secara permanen."
       security:
         - cookieAuth: []
       parameters:
@@ -1467,14 +1606,15 @@ paths:
           required: true
           schema:
             type: string
-          description: "ID unik member yang akan dihapus."
+            format: cuid
+          description: "ID unik member yang akan dihapus (format CUID)."
       responses:
         "200":
-          description: Member berhasil dihapus.
+          description: "Member berhasil dihapus."
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/SuccessResponse"
+                $ref: "#/components/schemas/BaseResponse"
         "401":
           $ref: "#/components/responses/Unauthorized"
         "404":
@@ -1484,9 +1624,9 @@ paths:
     get:
       tags:
         - Users
-      summary: Get all users (Admin)
+      summary: "Ambil semua pengguna (Admin)"
       operationId: getAllUsers
-      description: Mengambil daftar semua user/staf sistem. Hanya dapat diakses oleh Admin.
+      description: "Mengambil daftar semua pengguna/staf sistem. Hanya dapat diakses oleh Admin."
       security:
         - cookieAuth: []
       parameters:
@@ -1494,7 +1634,7 @@ paths:
           name: limit
           schema:
             type: string
-          description: "Jumlah item per halaman."
+          description: "Jumlah data per halaman."
         - in: query
           name: page
           schema:
@@ -1507,20 +1647,20 @@ paths:
           description: "Pencarian berdasarkan nama atau username."
       responses:
         "200":
-          description: Daftar user berhasil diambil.
+          description: "Daftar pengguna berhasil diambil."
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  success:
-                    type: boolean
-                  message:
-                    type: string
-                  data:
-                    type: array
-                    items:
-                      $ref: "#/components/schemas/User"
+                allOf:
+                  - $ref: "#/components/schemas/BaseResponse"
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/User"
+                      meta:
+                        $ref: "#/components/schemas/PaginationMeta"
         "401":
           $ref: "#/components/responses/Unauthorized"
         "403":
@@ -1528,9 +1668,9 @@ paths:
     post:
       tags:
         - Users
-      summary: Create new user (Admin)
+      summary: "Tambah pengguna baru (Admin)"
       operationId: createUser
-      description: Membuat akun user/staf baru dalam sistem. Hanya Admin yang dapat melakukan ini.
+      description: "Membuat akun pengguna/staf baru di dalam sistem. Hanya Admin yang diizinkan."
       security:
         - cookieAuth: []
       requestBody:
@@ -1545,30 +1685,39 @@ paths:
                   type: string
                   minLength: 1
                   maxLength: 20
+                  description: "Nama lengkap staf."
                   example: "Andi Wijaya"
                 username:
                   type: string
                   minLength: 1
                   maxLength: 20
                   pattern: "^[a-zA-Z0-9_]{1,20}$"
+                  description: "Username unik untuk login."
                   example: "andi_cashier"
                 password:
                   type: string
                   format: password
                   minLength: 8
+                  description: "Kata sandi akun."
                   example: "Password123"
                 role:
                   type: string
                   enum: [ADMIN, SUPERVISOR, CASHIER]
                   default: CASHIER
+                  description: "Peran atau hak akses."
                   example: "CASHIER"
       responses:
         "201":
-          description: User berhasil dibuat.
+          description: "Pengguna berhasil dibuat."
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/SuccessResponse"
+                allOf:
+                  - $ref: "#/components/schemas/BaseResponse"
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/User"
         "400":
           $ref: "#/components/responses/BadRequest"
         "401":
@@ -1580,9 +1729,9 @@ paths:
     get:
       tags:
         - Users
-      summary: Get user by ID
+      summary: "Ambil pengguna berdasarkan ID"
       operationId: getUserById
-      description: Mengambil informasi detail seorang user menggunakan ID uniknya.
+      description: "Mendapatkan informasi lengkap mengenai pengguna berdasarkan ID unik."
       security:
         - cookieAuth: []
       parameters:
@@ -1591,21 +1740,20 @@ paths:
           required: true
           schema:
             type: string
-          description: "ID unik user."
+            format: cuid
+          description: "ID unik pengguna (format CUID)."
       responses:
         "200":
-          description: Detail user berhasil ditemukan.
+          description: "Detail pengguna berhasil ditemukan."
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  success:
-                    type: boolean
-                  message:
-                    type: string
-                  data:
-                    $ref: "#/components/schemas/User"
+                allOf:
+                  - $ref: "#/components/schemas/BaseResponse"
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/User"
         "401":
           $ref: "#/components/responses/Unauthorized"
         "404":
@@ -1615,9 +1763,9 @@ paths:
     get:
       tags:
         - Users
-      summary: Get user by username
+      summary: "Ambil pengguna berdasarkan username"
       operationId: getUserByUsername
-      description: Mengambil informasi detail seorang user menggunakan username uniknya.
+      description: "Mendapatkan informasi pengguna berdasarkan username unik mereka."
       security:
         - cookieAuth: []
       parameters:
@@ -1626,21 +1774,19 @@ paths:
           required: true
           schema:
             type: string
-          description: "Username unik user."
+          description: "Username unik pengguna."
       responses:
         "200":
-          description: Detail user berhasil ditemukan.
+          description: "Detail pengguna berhasil ditemukan."
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  success:
-                    type: boolean
-                  message:
-                    type: string
-                  data:
-                    $ref: "#/components/schemas/User"
+                allOf:
+                  - $ref: "#/components/schemas/BaseResponse"
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/User"
         "401":
           $ref: "#/components/responses/Unauthorized"
         "404":
@@ -1650,9 +1796,9 @@ paths:
     put:
       tags:
         - Users
-      summary: Update user
+      summary: "Perbarui pengguna"
       operationId: updateUser
-      description: Memperbarui informasi akun user yang sudah ada.
+      description: "Memperbarui informasi profil atau peran akun pengguna yang sudah ada."
       security:
         - cookieAuth: []
       parameters:
@@ -1661,7 +1807,8 @@ paths:
           required: true
           schema:
             type: string
-          description: "ID unik user yang akan diperbarui."
+            format: cuid
+          description: "ID unik pengguna yang akan diperbarui (format CUID)."
       requestBody:
         required: true
         content:
@@ -1673,21 +1820,29 @@ paths:
                   type: string
                   minLength: 1
                   maxLength: 20
+                  description: "Nama lengkap baru."
                 username:
                   type: string
                   minLength: 1
                   maxLength: 20
                   pattern: "^[a-zA-Z0-9_]{1,20}$"
+                  description: "Username baru."
                 role:
                   type: string
                   enum: [ADMIN, SUPERVISOR, CASHIER]
+                  description: "Peran baru."
       responses:
         "200":
-          description: Data user berhasil diperbarui.
+          description: "Data pengguna berhasil diperbarui."
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/SuccessResponse"
+                allOf:
+                  - $ref: "#/components/schemas/BaseResponse"
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/User"
         "400":
           $ref: "#/components/responses/BadRequest"
         "401":
@@ -1697,9 +1852,9 @@ paths:
     delete:
       tags:
         - Users
-      summary: Delete user
+      summary: "Hapus pengguna"
       operationId: deleteUser
-      description: Menghapus akun user dari sistem secara permanen.
+      description: "Menghapus akun pengguna dari sistem secara permanen."
       security:
         - cookieAuth: []
       parameters:
@@ -1708,14 +1863,15 @@ paths:
           required: true
           schema:
             type: string
-          description: "ID unik user yang akan dihapus."
+            format: cuid
+          description: "ID unik pengguna yang akan dihapus (format CUID)."
       responses:
         "200":
-          description: User berhasil dihapus.
+          description: "Pengguna berhasil dihapus."
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/SuccessResponse"
+                $ref: "#/components/schemas/BaseResponse"
         "401":
           $ref: "#/components/responses/Unauthorized"
         "404":
