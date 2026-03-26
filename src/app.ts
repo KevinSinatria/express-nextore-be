@@ -27,6 +27,9 @@ const swaggerOptions: SwaggerOptions = {
     "https://cdn.jsdelivr.net/npm/swagger-ui-dist@5.11.0/swagger-ui-bundle.js",
     "https://cdn.jsdelivr.net/npm/swagger-ui-dist@5.11.0/swagger-ui-standalone-preset.js",
   ],
+  swaggerOptions: {
+    defaultModelsExpandDepth: -1,
+  },
 };
 
 app.use(cors(corsOptions));
