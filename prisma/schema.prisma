@@ -14,6 +14,7 @@ datasource db {
 }
 
 enum Role {
+  SUPERUSER
   ADMIN
   SUPERVISOR
   CASHIER
@@ -25,29 +26,33 @@ model User {
   image           String?
   email           String?   @unique
   emailVerified   Boolean   @default(false)
-  role            Role      @default(CASHIER)
+  roles           Role[]    @default([CASHIER])
   username        String    @unique
   displayUsername String?   @unique
   sessions        Session[]
   accounts        Account[]
+  lastActive      DateTime?
 
   transactions Transaction[]
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
+  cashShifts   CashShift[]
+  auditLogs    AuditLog[]
 
   @@map("user")
 }
 
 model Session {
-  id        String   @id @default(cuid())
-  expiresAt DateTime
-  token     String   @unique
-  createdAt DateTime
-  updatedAt DateTime
-  ipAddress String?
-  userAgent String?
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id         String   @id @default(cuid())
+  expiresAt  DateTime
+  token      String   @unique
+  createdAt  DateTime
+  updatedAt  DateTime
+  ipAddress  String?
+  userAgent  String?
+  userId     String
+  activeRole Role?
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@map("session")
@@ -92,7 +97,7 @@ model Product {
   images            String[]          @default([])
   hpp               Float
   price             Float
-  stock             Int               @default(0)
+  totalStock        Int               @default(0)
   lowStockThreshold Int               @default(10)
   items             TransactionItem[]
   createdAt         DateTime          @default(now())
@@ -100,6 +105,7 @@ model Product {
   category          Category?         @relation(fields: [categoryId], references: [id])
   categoryId        String?
   discount          Discount[]
+  stockBatches      StockBatch[]
 }
 
 model Discount {
@@ -145,11 +151,15 @@ model Member {
 model Transaction {
   id            String            @id @default(cuid())
   invoiceNumber String            @unique
+  customerName  String?
   totalGross    Float
   totalDiscount Float             @default(0)
   totalNet      Float
   totalProfit   Float
+  totalHpp      Float             @default(0)
   paymentMethod String
+  cashReceived  Float?
+  change        Float?
   status        TransactionStatus @default(PENDING)
 
   userId   String
@@ -180,4 +190,42 @@ model TransactionItem {
   hppAtSale     Float
   totalDiscount Float @default(0)
   subtotal      Float
+}
+
+model StockBatch {
+  id                String    @id @default(cuid())
+  productId         String
+  product           Product   @relation(fields: [productId], references: [id])
+  initialQuantity   Int
+  remainingQuantity Int
+  purchasePrice     Float
+  expiryDate        DateTime?
+  createdAt         DateTime  @default(now())
+}
+
+model CashShift {
+  id           String      @id @default(cuid())
+  userId       String
+  user         User        @relation(fields: [userId], references: [id])
+  startTime    DateTime    @default(now())
+  endTime      DateTime?
+  startingCash Float
+  expectedCash Float?
+  actualCash   Float?
+  difference   Float?
+  status       ShiftStatus @default(OPEN)
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  action    String
+  details   Json?
+  createdAt DateTime @default(now())
+}
+
+enum ShiftStatus {
+  OPEN
+  CLOSED
 }
