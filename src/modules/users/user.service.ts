@@ -67,13 +67,21 @@ const userService = {
         password: data.password,
         username: data.username,
         name: data.name,
-        role: data.role,
+      },
+    });
+
+    await prisma.user.update({
+      where: {
+        id: newUser.user.id,
+      },
+      data: {
+        roles: data.roles,
       },
     });
 
     return await prisma.user.update({
       where: { id: newUser.user.id },
-      data: { role: data.role },
+      data: { roles: data.roles },
     });
   },
 
@@ -91,7 +99,7 @@ const userService = {
       const updateData: Prisma.UserUpdateInput = {};
 
       if (data.name) updateData.name = data.name;
-      if (data.role) updateData.role = data.role;
+      if (data.roles) updateData.roles = data.roles;
       if (data.image !== undefined) updateData.image = data.image;
 
       if (data.username) {

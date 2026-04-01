@@ -4,6 +4,7 @@ import { customSession, openAPI, username } from "better-auth/plugins";
 import prisma from "../config/prisma.js";
 import { env } from "../config/env.js";
 import { createId } from "@paralleldrive/cuid2";
+import type { Role } from "../generated/prisma/enums.js";
 
 export const auth = betterAuth({
   database: prismaAdapter(prisma, {
@@ -23,6 +24,10 @@ export const auth = betterAuth({
       generateId: () => createId(),
     },
   },
+  session: {
+    expiresIn: 60 * 60,
+    updateAge: 60 * 5,
+  },
   plugins: [
     username(),
     openAPI(),
@@ -34,26 +39,41 @@ export const auth = betterAuth({
         select: {
           id: true,
           name: true,
-          role: true,
+          roles: true,
           username: true,
           image: true,
           createdAt: true,
           updatedAt: true,
         },
       });
+
+      const sessionData = await prisma.session.findUnique({
+        where: {
+          id: session.id,
+        },
+        select: {
+          activeRole: true,
+        },
+      });
+
       return {
-        userData,
-        user,
-        session,
+        user: {
+          ...user,
+          roles: userData?.roles as Role[],
+        },
+        session: {
+          ...session,
+          activeRole: sessionData?.activeRole as Role,
+        },
       };
     }),
   ],
   user: {
     additionalFields: {
-      role: {
-        type: ["CASHIER", "ADMIN", "SUPERVISOR"],
-        required: true,
-        defaultValue: "CASHIER",
+      roles: {
+        type: ["CASHIER", "ADMIN", "SUPERVISOR", "SUPERUSER"],
+        required: false,
+        defaultValue: [],
       },
     },
   },

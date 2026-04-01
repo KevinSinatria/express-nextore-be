@@ -224,7 +224,7 @@ const transactionService = {
           throw err;
         }
 
-        if (product.stock < item.qty) {
+        if (product.totalStock < item.qty) {
           throw new CustomError(
             400,
             `Product with ID ${item.productId} is out of stock.`,
@@ -235,7 +235,7 @@ const transactionService = {
               id: item.productId,
             },
             data: {
-              stock: {
+              totalStock: {
                 decrement: item.qty,
               },
             },
@@ -337,7 +337,7 @@ const transactionService = {
               id: item.productId,
             },
             data: {
-              stock: {
+              totalStock: {
                 increment: item.qty,
               },
             },

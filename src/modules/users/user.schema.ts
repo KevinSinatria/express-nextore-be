@@ -1,4 +1,5 @@
 import z from "zod";
+import { Role } from "../../generated/prisma/enums.js";
 
 const getAllUsersSchema = z.object({
   query: z.object({
@@ -41,7 +42,7 @@ const createUserSchema = z.object({
         /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/,
         "Password must contain at least one lowercase letter, one uppercase letter, and one number",
       ),
-    role: z.enum(["ADMIN", "SUPERVISOR", "CASHIER"]).default("CASHIER"),
+    roles: z.array(z.enum(Role)),
   }),
 });
 
@@ -64,7 +65,7 @@ const updateUserSchema = z.object({
         "Username must be at least 1 characters long and contain only letters, numbers, and underscores",
       )
       .optional(),
-    role: z.enum(["ADMIN", "SUPERVISOR", "CASHIER"]).optional(),
+    roles: z.array(z.enum(Role)).optional(),
   }),
 });
 
