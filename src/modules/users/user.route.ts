@@ -8,7 +8,7 @@ import {
 } from "../../middlewares/auth.middleware.js";
 
 const router = Router();
-router.use(isAuthenticated, authorizeRole(["ADMIN"]));
+router.use(isAuthenticated, authorizeRole(["SUPERUSER"]));
 
 router.get(
   "/",

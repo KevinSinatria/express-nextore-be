@@ -18,8 +18,7 @@ export const isAuthenticated = async (
     });
   }
 
-  // Attach session and user to request object
-  req.user = session.userData;
+  req.user = session.user;
   req.session = session.session;
 
   next();
@@ -28,6 +27,7 @@ export const isAuthenticated = async (
 export const authorizeRole = (allowedRoles: string[]) => {
   return (req: Request, res: Response, next: NextFunction) => {
     const user = req.user!;
+    const session = req.session;
 
     if (!user) {
       return res.status(401).json({
@@ -36,10 +36,10 @@ export const authorizeRole = (allowedRoles: string[]) => {
       });
     }
 
-    if (!allowedRoles.includes(user.role)) {
+    if (!allowedRoles.includes(session?.activeRole!)) {
       return res.status(403).json({
         success: false,
-        message: `Forbidden: Access denied for role ${user.role}`,
+        message: `Forbidden: Access denied for role ${session?.activeRole}`,
       });
     }
 

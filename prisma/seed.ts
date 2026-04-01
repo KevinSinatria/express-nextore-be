@@ -21,40 +21,68 @@ async function main() {
   console.log("Seeding Users...");
   const users = [];
 
+  // Superuser (All roles)
+  console.log("Creating Superuser...");
+  const superuser = await auth.api.signUpEmail({
+    body: {
+      username: "superuser",
+      password: "superuser123",
+      name: "superuser",
+      email: `superuser@placeholder.local`,
+    },
+  });
+  await prisma.user.update({
+    where: { id: superuser.user.id },
+    data: { roles: ["SUPERUSER", "ADMIN", "SUPERVISOR", "CASHIER"] },
+  });
+  users.push(superuser.user);
+
   // Admin
+  console.log("Creating Admin...");
   const admin = await auth.api.signUpEmail({
     body: {
       username: "admin",
       password: "admin123",
       name: "admin",
-      role: "ADMIN",
       email: `admin@placeholder.local`,
     },
+  });
+  await prisma.user.update({
+    where: { id: admin.user.id },
+    data: { roles: ["ADMIN", "CASHIER"] },
   });
   users.push(admin.user);
 
   // Supervisor
+  console.log("Creating Supervisor...");
   const supervisor = await auth.api.signUpEmail({
     body: {
       username: "supervisor",
       password: "supervisor123",
       name: "supervisor",
-      role: "SUPERVISOR",
       email: `supervisor@placeholder.local`,
     },
+  });
+  await prisma.user.update({
+    where: { id: supervisor.user.id },
+    data: { roles: ["SUPERVISOR", "CASHIER"] },
   });
   users.push(supervisor.user);
 
   // Cashiers
+  console.log("Creating Cashiers...");
   for (let i = 0; i < 5; i++) {
     const cashier = await auth.api.signUpEmail({
       body: {
         username: `cashier${i}`,
         password: `cashier123`,
         name: `cashier${i}`,
-        role: "CASHIER",
         email: `cashier${i}@placeholder.local`,
       },
+    });
+    await prisma.user.update({
+      where: { id: cashier.user.id },
+      data: { roles: ["CASHIER"] },
     });
     users.push(cashier.user);
   }
@@ -87,7 +115,7 @@ async function main() {
         images: [faker.image.url({ width: 400, height: 400 })],
         hpp: Math.round(hpp),
         price,
-        stock: faker.number.int({ min: 10, max: 500 }),
+        totalStock: faker.number.int({ min: 10, max: 500 }),
         lowStockThreshold: faker.number.int({ min: 5, max: 30 }),
         categoryId: faker.helpers.arrayElement(categories).id,
       },
