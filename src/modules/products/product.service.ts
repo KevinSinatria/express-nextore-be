@@ -111,8 +111,7 @@ const productService = {
     data: CreateProductParams["body"];
     files: Express.Multer.File[] | undefined;
   }) => {
-    const { name, sku, hpp, price, stock, lowStockThreshold, categoryId } =
-      data;
+    const { name, sku, price, lowStockThreshold, categoryId } = data;
     let imageUrls: string[] = [];
 
     try {
@@ -121,13 +120,14 @@ const productService = {
           files.map((file) => uploadImage(file.buffer, "products")),
         );
       }
+
       const product = await prisma.product.create({
         data: {
           name,
           sku,
-          hpp: Number(hpp),
+          hppAverage: 0,
           price: Number(price),
-          stock: Number(stock),
+          totalStock: 0,
           images: imageUrls,
           lowStockThreshold: Number(lowStockThreshold),
           categoryId,
@@ -177,9 +177,7 @@ const productService = {
         data: {
           name,
           sku,
-          hpp: Number(hpp),
           price: Number(price),
-          stock: Number(stock),
           lowStockThreshold: Number(lowStockThreshold),
           categoryId,
           ...(newImageUrls && { images: newImageUrls }),
@@ -239,7 +237,7 @@ const productService = {
   alertLowStock: async () => {
     const products = await prisma.product.findMany({
       where: {
-        stock: {
+        totalStock: {
           lt: prisma.product.fields.lowStockThreshold,
         },
       },

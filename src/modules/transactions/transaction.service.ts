@@ -209,6 +209,7 @@ const transactionService = {
             },
             include: {
               discount: true,
+              bundleComponents: true,
             },
           });
         } catch (err) {
@@ -224,22 +225,45 @@ const transactionService = {
           throw err;
         }
 
-        if (product.totalStock < item.qty) {
-          throw new CustomError(
-            400,
-            `Product with ID ${item.productId} is out of stock.`,
-          );
-        } else {
-          await tx.product.update({
-            where: {
-              id: item.productId,
-            },
-            data: {
-              totalStock: {
-                decrement: item.qty,
+        if (product.isBundle) {
+          for (const component of product.bundleComponents) {
+            const compProduct = await tx.product.findUniqueOrThrow({
+              where: { id: component.componentId },
+            });
+            const neededQty = item.qty * component.qty;
+            if (compProduct.totalStock < neededQty) {
+              throw new CustomError(
+                400,
+                `Component Product ${compProduct.name} is out of stock for bundle ${product.name}.`,
+              );
+            }
+            await tx.product.update({
+              where: { id: component.componentId },
+              data: {
+                totalStock: {
+                  decrement: neededQty,
+                },
               },
-            },
-          });
+            });
+          }
+        } else {
+          if (product.totalStock < item.qty) {
+            throw new CustomError(
+              400,
+              `Product ${product.name} is out of stock.`,
+            );
+          } else {
+            await tx.product.update({
+              where: {
+                id: item.productId,
+              },
+              data: {
+                totalStock: {
+                  decrement: item.qty,
+                },
+              },
+            });
+          }
         }
 
         let totalItemDiscount: number = 0;
@@ -251,13 +275,13 @@ const transactionService = {
         const totalItemNet = totalItemGross - totalItemDiscount;
         totalDiscount += totalItemDiscount;
         totalGross += totalItemGross;
-        totalProfit += totalItemNet - product.hpp * item.qty;
+        totalProfit += totalItemNet - product.hppAverage * item.qty;
 
         transactionItems.push({
           productId: product.id,
           qty: item.qty,
           priceAtSale: product.price,
-          hppAtSale: product.hpp,
+          hppAtSale: product.hppAverage,
           totalDiscount: totalItemDiscount,
           subtotal: totalItemNet,
         });
@@ -315,7 +339,15 @@ const transactionService = {
             id,
           },
           select: {
-            items: true,
+            items: {
+              include: {
+                product: {
+                  include: {
+                    bundleComponents: true,
+                  },
+                },
+              },
+            },
             status: true,
           },
         });
@@ -332,16 +364,30 @@ const transactionService = {
         }
 
         for (const item of transaction.items) {
-          await tx.product.update({
-            where: {
-              id: item.productId,
-            },
-            data: {
-              totalStock: {
-                increment: item.qty,
+          const product = item.product;
+          if (product.isBundle) {
+            for (const component of product.bundleComponents) {
+              await tx.product.update({
+                where: { id: component.componentId },
+                data: {
+                  totalStock: {
+                    increment: item.qty * component.qty,
+                  },
+                },
+              });
+            }
+          } else {
+            await tx.product.update({
+              where: {
+                id: item.productId,
               },
-            },
-          });
+              data: {
+                totalStock: {
+                  increment: item.qty,
+                },
+              },
+            });
+          }
         }
 
         await tx.transaction.update({
