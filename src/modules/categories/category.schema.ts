@@ -17,6 +17,7 @@ const getCategoryByIdSchema = z.object({
 const createCategorySchema = z.object({
   body: z.object({
     name: z.string().min(3).max(100),
+    hasExpiry: z.boolean().optional().default(false),
   }),
 });
 
@@ -26,6 +27,7 @@ const updateCategorySchema = z.object({
   }),
   body: z.object({
     name: z.string().min(3).max(100),
+    hasExpiry: z.boolean().optional().default(false),
   }),
 });
 

@@ -86,11 +86,14 @@ const categoryService = {
   },
 
   createCategory: async ({ data }: { data: CreateCategoryParams["body"] }) => {
-    const { name } = data;
+    const { name, hasExpiry } = data;
+    const slug = name.toLowerCase().replace(/\s+/g, "-");
 
     const category = await prisma.category.create({
       data: {
         name,
+        slug,
+        hasExpiry,
       },
     });
 
@@ -104,7 +107,8 @@ const categoryService = {
     id: UpdateCategoryParams["params"]["id"];
     data: UpdateCategoryParams["body"];
   }) => {
-    const { name } = data;
+    const { name, hasExpiry } = data;
+    const slug = name.toLowerCase().replace(/\s+/g, "-");
 
     try {
       const category = await prisma.category.update({
@@ -113,6 +117,8 @@ const categoryService = {
         },
         data: {
           name,
+          slug,
+          hasExpiry,
         },
       });
 
