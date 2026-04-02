@@ -20,7 +20,7 @@ const authController = {
       const userId = req.user!.id;
       const result = await authService.selectRole({
         role: req.body.role,
-        sessionId: req.body.sessionId,
+        token: req.session!.token,
         userId,
       });
       sendResponse(res, 200, "Role selected successfully", result);
@@ -31,8 +31,21 @@ const authController = {
 
   login: async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const result = await authService.login(req.body);
-      sendResponse(res, 200, result!.message, result?.data);
+      const result = await authService.login({
+        ...req.body,
+        headers: req.headers,
+      });
+
+      if (result.data.headers) {
+        result.data.headers.forEach((value, key) => {
+          res.setHeader(key, value);
+        });
+      }
+
+      sendResponse(res, 200, result!.message, {
+        ...result?.data,
+        headers: undefined,
+      });
     } catch (error) {
       next(error);
     }

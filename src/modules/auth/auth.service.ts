@@ -4,17 +4,18 @@ import type { Role } from "../../generated/prisma/enums.js";
 import type z from "zod";
 import authSchema from "./auth.schema.js";
 import { auth } from "../../lib/auth.js";
+import { fromNodeHeaders } from "better-auth/node";
 
 type LoginParams = z.infer<typeof authSchema.loginSchema>;
 
 const authService = {
   selectRole: async ({
     role,
-    sessionId,
+    token,
     userId,
   }: {
     role: Role;
-    sessionId: string;
+    token: string;
     userId: string;
   }) => {
     const user = await prisma.user.findUnique({
@@ -33,7 +34,7 @@ const authService = {
 
     await prisma.session.update({
       where: {
-        id: sessionId,
+        token,
       },
       data: {
         activeRole: role,
@@ -43,13 +44,19 @@ const authService = {
     return;
   },
 
-  login: async ({ username, password }: LoginParams["body"]) => {
+  login: async ({
+    username,
+    password,
+    headers,
+  }: LoginParams["body"] & { headers: any }) => {
     const session = await auth.api.signInUsername({
       body: { username, password },
+      headers: fromNodeHeaders(headers),
+      returnHeaders: true,
     });
     const user = await prisma.user.findUnique({
       where: {
-        id: session.user.id,
+        id: session.response.user.id,
       },
     });
 
@@ -61,7 +68,7 @@ const authService = {
       if (user.roles.length === 1) {
         await prisma.session.update({
           where: {
-            token: session.token,
+            token: session.response.token,
           },
           data: {
             activeRole: user.roles[0]!,
@@ -73,7 +80,7 @@ const authService = {
           message: "Login successfully.",
           data: {
             requiresRoleSelection: false,
-            token: session.token,
+            headers: session.headers,
           },
         };
       } else if (user.roles.length > 1) {
@@ -82,8 +89,8 @@ const authService = {
           message: "Please select a role first.",
           data: {
             requiresRoleSelection: true,
-            token: session.token,
             availableRoles: user.roles,
+            headers: session.headers,
           },
         };
       }

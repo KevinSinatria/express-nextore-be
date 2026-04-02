@@ -4,7 +4,6 @@ import { Role } from "../../generated/prisma/enums.js";
 const selectRoleSchema = z.object({
   body: z.object({
     role: z.enum(Role),
-    sessionId: z.string(),
   }),
 });
 
