@@ -123,8 +123,17 @@ const bundleService = {
         id: { in: componentIds },
         isBundle: false,
       },
-      select: { id: true },
+      select: { id: true, hppAverage: true },
     });
+    const hppAverage = components.reduce((acc, component) => {
+      const existingComponent = existingComponents.find(
+        (c) => c.id === component.componentId,
+      );
+      if (!existingComponent) {
+        throw new CustomError(400, "One or more components are invalid.");
+      }
+      return acc + existingComponent.hppAverage * component.qty;
+    }, 0);
 
     if (existingComponents.length !== componentIds.length) {
       const missingIds = componentIds.filter(
@@ -149,9 +158,9 @@ const bundleService = {
           data: {
             name: productData.name,
             sku: productData.sku,
-            hppAverage: 0,
+            hppAverage,
             price: Number(productData.price),
-            lowStockThreshold: Number(productData.lowStockThreshold),
+            lowStockThreshold: 0,
             categoryId: productData.categoryId,
             description: productData.description ?? null,
             isBundle: true,
@@ -212,9 +221,6 @@ const bundleService = {
           ...(productData.name && { name: productData.name }),
           ...(productData.sku && { sku: productData.sku }),
           ...(productData.price && { price: Number(productData.price) }),
-          ...(productData.lowStockThreshold && {
-            lowStockThreshold: Number(productData.lowStockThreshold),
-          }),
           ...(productData.categoryId && { categoryId: productData.categoryId }),
           ...(productData.description && {
             description: productData.description,

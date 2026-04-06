@@ -19,6 +19,7 @@ const createTransactionSchema = z.object({
   body: z.object({
     paymentMethod: z.string(),
     memberId: z.string().optional(),
+    customerName: z.string().optional(),
     status: z
       .enum(TransactionStatus)
       .optional()
@@ -26,9 +27,17 @@ const createTransactionSchema = z.object({
     items: z.array(
       z.object({
         productId: z.string(),
-        qty: z.number(),
+        qty: z.number().positive(),
       }),
     ),
+  }).superRefine((data, ctx) => {
+    if (data.status === "PENDING" && !data.customerName) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "customerName is required when status is PENDING",
+        path: ["customerName"],
+      });
+    }
   }),
 });
 
@@ -38,11 +47,30 @@ const deleteTransactionSchema = z.object({
   }),
 });
 
+const updatePendingTransactionSchema = z.object({
+  params: z.object({
+    id: z.string(),
+  }),
+  body: z.object({
+    // Optional changes
+    paymentMethod: z.string().optional(),
+    memberId: z.string().optional(),
+    customerName: z.string().optional(),
+    items: z.array(
+      z.object({
+        productId: z.string(),
+        qty: z.number().positive(),
+      }),
+    ).optional(),
+  }),
+});
+
 const transactionSchema = {
   getAllTransactionSchema,
   getTransactionByIdSchema,
   createTransactionSchema,
   deleteTransactionSchema,
+  updatePendingTransactionSchema,
 };
 
 export default transactionSchema;

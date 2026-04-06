@@ -20,7 +20,6 @@ const createBundleSchema = z.object({
     name: z.string().min(3).max(100),
     sku: z.string().min(3).max(100),
     price: z.coerce.number(),
-    lowStockThreshold: z.coerce.number().default(10),
     categoryId: z.string(),
     description: z.string().optional(),
     components: z
@@ -41,9 +40,7 @@ const updateBundleSchema = z.object({
   body: z.object({
     name: z.string().min(3).max(100).optional(),
     sku: z.string().min(3).max(100).optional(),
-    hpp: z.coerce.number().optional(),
     price: z.coerce.number().optional(),
-    lowStockThreshold: z.coerce.number().optional(),
     categoryId: z.string().optional(),
     description: z.string().optional(),
     components: z

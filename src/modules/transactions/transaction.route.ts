@@ -42,4 +42,12 @@ transactionRoute.delete(
   transactionController.deleteTransaction,
 );
 
+transactionRoute.patch(
+  "/:id/update-pending",
+  authorizeRole(["ADMIN", "SUPERVISOR", "CASHIER"]),
+  validate(transactionSchema.updatePendingTransactionSchema),
+  // Tambah fungsi validator atau validateStock jika perlu
+  transactionController.updatePendingTransaction,
+);
+
 export default transactionRoute;
