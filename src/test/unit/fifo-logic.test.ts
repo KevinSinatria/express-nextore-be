@@ -1,14 +1,17 @@
-import { describe, it, expect } from 'vitest';
-import prisma from '../../config/prisma.js';
-import stockBatchService from '../../modules/stock-batches/stock-batch.service.js';
-import { deductStockLifo, restockLifo } from '../../modules/transactions/transaction.service.js';
+import { describe, it, expect } from "vitest";
+import prisma from "../../config/prisma.js";
+import stockBatchService from "../../modules/stock-batches/stock-batch.service.js";
+import {
+  deductStockFifo,
+  restockFifo,
+} from "../../modules/transactions/transaction.service.js";
 
-describe('LIFO Stock Logic', () => {
-  it('should deduct stock from batches in LIFO order (latest first)', async () => {
+describe("FIFO Stock Logic", () => {
+  it("should deduct stock from batches in FIFO order (oldest first)", async () => {
     const product = await prisma.product.create({
       data: {
-        sku: 'LIFO-001',
-        name: 'LIFO Product',
+        sku: "FIFO-001",
+        name: "FIFO Product",
         price: 10000,
       },
     });
@@ -32,25 +35,25 @@ describe('LIFO Stock Logic', () => {
     });
 
     // Deduct 15 pcs
-    // LIFO means: 10 from Batch 2, 5 from Batch 1
+    // FIFO means: 10 from Batch 1, 5 from Batch 2
     await prisma.$transaction(async (tx) => {
-      await deductStockLifo(tx, product.id, 15);
+      await deductStockFifo(tx, product.id, 15);
     });
 
     const batches = await prisma.stockBatch.findMany({
       where: { productId: product.id },
-      orderBy: { createdAt: 'asc' },
+      orderBy: { createdAt: "asc" },
     });
 
-    expect(batches[0].remainingQuantity).toBe(5); // Batch 1 (Older)
-    expect(batches[1].remainingQuantity).toBe(0); // Batch 2 (Newer)
+    expect(batches[0]!.remainingQuantity).toBe(0); // Batch 1 (Older)
+    expect(batches[1]!.remainingQuantity).toBe(5); // Batch 2 (Newer)
   });
 
-  it('should restock to the latest batch', async () => {
+  it("should restock to the latest batch", async () => {
     const product = await prisma.product.create({
       data: {
-        sku: 'LIFO-002',
-        name: 'Restock Product',
+        sku: "FIFO-002",
+        name: "Restock Product",
         price: 10000,
       },
     });
@@ -66,18 +69,22 @@ describe('LIFO Stock Logic', () => {
 
     // Deduct 5 pcs
     await prisma.$transaction(async (tx) => {
-        await deductStockLifo(tx, product.id, 5);
+      await deductStockFifo(tx, product.id, 5);
     });
 
-    let batch = await prisma.stockBatch.findFirst({ where: { productId: product.id } });
+    let batch = await prisma.stockBatch.findFirst({
+      where: { productId: product.id },
+    });
     expect(batch?.remainingQuantity).toBe(5);
 
     // Restock 5 pcs
     await prisma.$transaction(async (tx) => {
-        await restockLifo(tx, product.id, 5);
+      await restockFifo(tx, product.id, 5);
     });
 
-    batch = await prisma.stockBatch.findFirst({ where: { productId: product.id } });
+    batch = await prisma.stockBatch.findFirst({
+      where: { productId: product.id },
+    });
     expect(batch?.remainingQuantity).toBe(10);
   });
 });

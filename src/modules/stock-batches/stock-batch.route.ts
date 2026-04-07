@@ -25,23 +25,30 @@ stockBatchRoute.get(
   stockBatchController.getStockBatchById,
 );
 
+stockBatchRoute.get(
+  "/product/:productId",
+  authorizeRole(["ADMIN", "SUPERVISOR", "CASHIER"]),
+  validate(stockBatchSchema.getStockBatchesByProductIdSchema),
+  stockBatchController.getStockBatchesByProductId,
+);
+
 stockBatchRoute.post(
   "/",
-  authorizeRole(["ADMIN", "SUPERVISOR"]),
+  authorizeRole(["ADMIN"]),
   validate(stockBatchSchema.createStockBatchSchema),
   stockBatchController.createStockBatch,
 );
 
 stockBatchRoute.patch(
   "/:id",
-  authorizeRole(["ADMIN", "SUPERVISOR"]),
+  authorizeRole(["ADMIN"]),
   validate(stockBatchSchema.updateStockBatchSchema),
   stockBatchController.updateStockBatch,
 );
 
 stockBatchRoute.delete(
   "/:id",
-  authorizeRole(["ADMIN", "SUPERVISOR"]),
+  authorizeRole(["ADMIN"]),
   validate(stockBatchSchema.deleteStockBatchSchema),
   stockBatchController.deleteStockBatch,
 );

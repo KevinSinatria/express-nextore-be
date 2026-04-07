@@ -33,14 +33,14 @@ type updatePendingTransactionParams = z.infer<
   typeof transactionSchema.updatePendingTransactionSchema
 >;
 
-export async function deductStockLifo(
+export async function deductStockFifo(
   tx: Prisma.TransactionClient,
   productId: string,
   qtyToDeduct: number,
 ) {
   const batches = await tx.stockBatch.findMany({
     where: { productId, remainingQuantity: { gt: 0 } },
-    orderBy: { createdAt: "desc" },
+    orderBy: { createdAt: "asc" },
   });
 
   let remaining = qtyToDeduct;
@@ -55,7 +55,7 @@ export async function deductStockLifo(
   }
 }
 
-export async function restockLifo(
+export async function restockFifo(
   tx: Prisma.TransactionClient,
   productId: string,
   qtyToRestock: number,
@@ -254,19 +254,25 @@ const transactionService = {
         let product;
         try {
           // Atomic Lock: Ensure NO concurrent deduction on the same product
-          const products = await tx.$queryRaw<any[]>`SELECT * FROM "Product" WHERE id = ${item.productId} FOR UPDATE`;
+          const products = await tx.$queryRaw<
+            any[]
+          >`SELECT * FROM "Product" WHERE id = ${item.productId} FOR UPDATE`;
           if (products.length === 0) {
-            throw new CustomError(404, `Product with ID ${item.productId} not found.`);
+            throw new CustomError(
+              404,
+              `Product with ID ${item.productId} not found.`,
+            );
           }
           product = products[0];
-          
+
           // Re-fetch discounts needed for the logic below
           const productWithDiscounts = await tx.product.findUnique({
             where: { id: item.productId },
-            include: { discount: true, bundleComponents: true }
+            include: { discount: true, bundleComponents: true },
           });
           product.discount = productWithDiscounts?.discount || [];
-          product.bundleComponents = productWithDiscounts?.bundleComponents || [];
+          product.bundleComponents =
+            productWithDiscounts?.bundleComponents || [];
         } catch (err) {
           throw err;
         }
@@ -274,12 +280,17 @@ const transactionService = {
         if (product.isBundle) {
           for (const component of product.bundleComponents) {
             // Atomic Lock for components
-            const components = await tx.$queryRaw<any[]>`SELECT * FROM "Product" WHERE id = ${component.componentId} FOR UPDATE`;
+            const components = await tx.$queryRaw<
+              any[]
+            >`SELECT * FROM "Product" WHERE id = ${component.componentId} FOR UPDATE`;
             if (components.length === 0) {
-              throw new CustomError(404, `Component Product with ID ${component.componentId} not found.`);
+              throw new CustomError(
+                404,
+                `Component Product with ID ${component.componentId} not found.`,
+              );
             }
             const compProduct = components[0];
-            
+
             const neededQty = item.qty * component.qty;
             if (compProduct.totalStock < neededQty) {
               throw new CustomError(
@@ -295,7 +306,7 @@ const transactionService = {
                 },
               },
             });
-            await deductStockLifo(tx, component.componentId, neededQty);
+            await deductStockFifo(tx, component.componentId, neededQty);
           }
         } else {
           if (product.totalStock < item.qty) {
@@ -314,7 +325,7 @@ const transactionService = {
                 },
               },
             });
-            await deductStockLifo(tx, item.productId, item.qty);
+            await deductStockFifo(tx, item.productId, item.qty);
           }
         }
 
@@ -430,7 +441,7 @@ const transactionService = {
                   },
                 },
               });
-              await restockLifo(tx, component.componentId, returnedQty);
+              await restockFifo(tx, component.componentId, returnedQty);
             }
           } else {
             await tx.product.update({
@@ -443,7 +454,7 @@ const transactionService = {
                 },
               },
             });
-            await restockLifo(tx, item.productId, item.qty);
+            await restockFifo(tx, item.productId, item.qty);
           }
         }
 
@@ -502,14 +513,14 @@ const transactionService = {
               where: { id: comp.componentId },
               data: { totalStock: { increment: returnedQty } },
             });
-            await restockLifo(tx, comp.componentId, returnedQty);
+            await restockFifo(tx, comp.componentId, returnedQty);
           }
         } else {
           await tx.product.update({
             where: { id: item.productId },
             data: { totalStock: { increment: item.qty } },
           });
-          await restockLifo(tx, item.productId, item.qty);
+          await restockFifo(tx, item.productId, item.qty);
         }
       }
 
@@ -566,7 +577,7 @@ const transactionService = {
               where: { id: component.componentId },
               data: { totalStock: { decrement: neededQty } },
             });
-            await deductStockLifo(tx, component.componentId, neededQty);
+            await deductStockFifo(tx, component.componentId, neededQty);
           }
         } else {
           if (product.totalStock < item.qty)
@@ -575,7 +586,7 @@ const transactionService = {
             where: { id: item.productId },
             data: { totalStock: { decrement: item.qty } },
           });
-          await deductStockLifo(tx, item.productId, item.qty);
+          await deductStockFifo(tx, item.productId, item.qty);
         }
 
         const now = new Date();
@@ -644,6 +655,7 @@ const transactionService = {
           items: {
             create: transactionItems,
           },
+          status: data.status ?? transaction.status,
         },
         include: { items: true },
       });

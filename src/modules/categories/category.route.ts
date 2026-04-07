@@ -32,7 +32,7 @@ categoryRoute.post(
   categoryController.createCategory,
 );
 
-categoryRoute.put(
+categoryRoute.patch(
   "/:id",
   authorizeRole(["ADMIN", "SUPERVISOR"]),
   validate(categorySchema.updateCategorySchema),

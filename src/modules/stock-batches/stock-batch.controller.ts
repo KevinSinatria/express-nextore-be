@@ -13,6 +13,9 @@ type GetAllStockBatchesRequest = Request<
 type GetStockBatchByIdRequest = Request<
   z.infer<typeof stockBatchSchema.getStockBatchByIdSchema>["params"]
 >;
+type GetStockBatchesByProductIdRequest = Request<
+  z.infer<typeof stockBatchSchema.getStockBatchesByProductIdSchema>["params"]
+>;
 type CreateStockBatchRequest = Request<
   unknown,
   unknown,
@@ -58,6 +61,21 @@ const stockBatchController = {
         id: req.params.id,
       });
       sendResponse(res, 200, "Stock batch fetched successfully", result);
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  getStockBatchesByProductId: async (
+    req: GetStockBatchesByProductIdRequest,
+    res: Response,
+    next: NextFunction,
+  ) => {
+    try {
+      const result = await stockBatchService.getStockBatchesByProductId({
+        productId: req.params.productId,
+      });
+      sendResponse(res, 200, "Stock batches fetched successfully", result);
     } catch (error) {
       next(error);
     }

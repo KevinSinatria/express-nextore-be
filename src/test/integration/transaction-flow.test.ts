@@ -4,7 +4,7 @@ import app from '../../app.js';
 import prisma from '../../config/prisma.js';
 import stockBatchService from '../../modules/stock-batches/stock-batch.service.js';
 
-describe('Transaction Flow Integration (LIFO & Logic)', () => {
+describe('Transaction Flow Integration (FIFO & Logic)', () => {
   beforeEach(async () => {
     // Ensure we have an admin user that matches our mock session
     // Needs to be in beforeEach because setup.ts truncates tables!
@@ -20,7 +20,7 @@ describe('Transaction Flow Integration (LIFO & Logic)', () => {
     });
   });
 
-  it('should process a PENDING transaction and lock stock using LIFO', async () => {
+  it('should process a PENDING transaction and lock stock using FIFO', async () => {
     // 1. Setup Inventory
     const product = await prisma.product.create({
       data: {
@@ -52,7 +52,7 @@ describe('Transaction Flow Integration (LIFO & Logic)', () => {
     expect(res.status).toBe(201);
     const transaction = res.body.data;
     
-    // 3. Verify Stock Lock & LIFO
+    // 3. Verify Stock Lock & FIFO
     const updatedProduct = await prisma.product.findUnique({ where: { id: product.id } });
     expect(updatedProduct?.totalStock).toBe(5); // 20 - 15 = 5
 
@@ -60,8 +60,8 @@ describe('Transaction Flow Integration (LIFO & Logic)', () => {
       where: { productId: product.id },
       orderBy: { createdAt: 'asc' },
     });
-    expect(batches[0]?.remainingQuantity).toBe(5); // Old batch left with 5
-    expect(batches[1]?.remainingQuantity).toBe(0); // New batch exhausted
+    expect(batches[0]?.remainingQuantity).toBe(0); // Old batch exhausted
+    expect(batches[1]?.remainingQuantity).toBe(5); // New batch left with 5
 
     // 4. Verify HPP Snapshot
     const item = await prisma.transactionItem.findFirst({

@@ -15,12 +15,18 @@ const getStockBatchByIdSchema = z.object({
   }),
 });
 
+const getStockBatchesByProductIdSchema = z.object({
+  params: z.object({
+    productId: z.string(),
+  }),
+});
+
 const createStockBatchSchema = z.object({
   body: z.object({
     productId: z.string(),
     initialQuantity: z.coerce.number().int().positive(),
     purchasePrice: z.coerce.number().positive(),
-    expiryDate: z.string().datetime().optional().nullable(),
+    expiryDate: z.string().optional().nullable(),
   }),
 });
 
@@ -43,6 +49,7 @@ const deleteStockBatchSchema = z.object({
 const stockBatchSchema = {
   getAllStockBatchesSchema,
   getStockBatchByIdSchema,
+  getStockBatchesByProductIdSchema,
   createStockBatchSchema,
   updateStockBatchSchema,
   deleteStockBatchSchema,

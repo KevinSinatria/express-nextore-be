@@ -28,15 +28,15 @@ bundleRoute.get(
 
 bundleRoute.post(
   "/",
-  authorizeRole(["ADMIN", "SUPERVISOR"]),
+  authorizeRole(["ADMIN"]),
   uploadMiddleware.array("images", 5),
   validate(bundleSchema.createBundleSchema),
   bundleController.createBundle,
 );
 
-bundleRoute.put(
+bundleRoute.patch(
   "/:id",
-  authorizeRole(["ADMIN", "SUPERVISOR"]),
+  authorizeRole(["ADMIN"]),
   uploadMiddleware.array("images", 5),
   validate(bundleSchema.updateBundleSchema),
   bundleController.updateBundle,
@@ -44,7 +44,7 @@ bundleRoute.put(
 
 bundleRoute.delete(
   "/:id",
-  authorizeRole(["ADMIN", "SUPERVISOR"]),
+  authorizeRole(["ADMIN"]),
   validate(bundleSchema.deleteBundleSchema),
   bundleController.deleteBundle,
 );

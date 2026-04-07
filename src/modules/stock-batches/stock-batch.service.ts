@@ -101,6 +101,29 @@ const stockBatchService = {
     return batch;
   },
 
+  getStockBatchesByProductId: async ({ productId }: { productId: string }) => {
+    const batches = await prisma.stockBatch.findMany({
+      where: {
+        productId,
+      },
+      include: {
+        product: true,
+      },
+      orderBy: {
+        createdAt: "asc",
+      },
+    });
+
+    if (batches.length === 0) {
+      throw new CustomError(
+        404,
+        `Stock batches for product with ID ${productId} not found.`,
+      );
+    }
+
+    return batches;
+  },
+
   createStockBatch: async ({
     data,
   }: {
@@ -131,8 +154,8 @@ const stockBatchService = {
         data: {
           productId,
           batchNumber,
-          initialQuantity,
-          remainingQuantity: initialQuantity,
+          initialQuantity: Number(initialQuantity),
+          remainingQuantity: Number(initialQuantity),
           purchasePrice,
           expiryDate: expiryDate ? new Date(expiryDate) : null,
         },
@@ -140,13 +163,13 @@ const stockBatchService = {
 
       const currentValue = product.totalStock * product.hppAverage;
       const newValue = currentValue + initialQuantity * purchasePrice;
-      const newTotalStock = product.totalStock + initialQuantity;
+      const newTotalStock = product.totalStock + Number(initialQuantity);
       const newHppAverage = newTotalStock > 0 ? newValue / newTotalStock : 0;
 
       await tx.product.update({
         where: { id: productId },
         data: {
-          totalStock: { increment: initialQuantity },
+          totalStock: { increment: Number(initialQuantity) },
           hppAverage: newHppAverage,
         },
       });

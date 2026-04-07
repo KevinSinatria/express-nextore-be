@@ -222,7 +222,7 @@ model StockBatch {
   id                String    @id @default(cuid())
   productId         String
   batchNumber       String    @unique
-  product           Product   @relation(fields: [productId], references: [id])
+  product           Product   @relation(fields: [productId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   initialQuantity   Int
   remainingQuantity Int
   purchasePrice     Float

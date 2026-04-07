@@ -232,7 +232,7 @@ const bundleService = {
           const componentIds = components.map((c) => c.componentId);
           const existingComponents = await tx.product.findMany({
             where: { id: { in: componentIds }, isBundle: false },
-            select: { id: true },
+            select: { id: true, hppAverage: true },
           });
 
           if (existingComponents.length !== componentIds.length) {

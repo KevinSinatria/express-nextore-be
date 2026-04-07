@@ -21,7 +21,7 @@ productRoute.get(
 
 productRoute.get(
   "/alert-low-stock",
-  authorizeRole(["ADMIN", "SUPERVISOR"]),
+  authorizeRole(["ADMIN"]),
   productController.alertLowStock,
 );
 
@@ -34,7 +34,7 @@ productRoute.get(
 
 productRoute.post(
   "/",
-  authorizeRole(["ADMIN", "SUPERVISOR"]),
+  authorizeRole(["ADMIN"]),
   uploadMiddleware.array("images", 5),
   validate(productSchema.createProductSchema),
   productController.createProduct,
@@ -42,7 +42,7 @@ productRoute.post(
 
 productRoute.put(
   "/:id",
-  authorizeRole(["ADMIN", "SUPERVISOR"]),
+  authorizeRole(["ADMIN"]),
   uploadMiddleware.array("images", 5),
   validate(productSchema.updateProductSchema),
   productController.updateProduct,
@@ -50,7 +50,7 @@ productRoute.put(
 
 productRoute.delete(
   "/:id",
-  authorizeRole(["ADMIN", "SUPERVISOR"]),
+  authorizeRole(["ADMIN"]),
   validate(productSchema.deleteProductSchema),
   productController.deleteProduct,
 );
