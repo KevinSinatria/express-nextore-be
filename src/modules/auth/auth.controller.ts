@@ -10,6 +10,12 @@ type SelectRoleRequest = Request<
   z.infer<typeof authSchema.selectRoleSchema>["body"]
 >;
 
+type SelectPosRequest = Request<
+  unknown,
+  unknown,
+  z.infer<typeof authSchema.selectPosSchema>["body"]
+>;
+
 const authController = {
   selectRole: async (
     req: SelectRoleRequest,
@@ -25,6 +31,27 @@ const authController = {
       });
       sendResponse(res, 200, "Role selected successfully", result);
     } catch (error) {
+      next(error);
+    }
+  },
+
+  selectPos: async (
+    req: SelectPosRequest,
+    res: Response,
+    next: NextFunction,
+  ) => {
+    try {
+      const userId = req.user!.id;
+      const {posId} = req.body;
+      const token = req.session!.token;
+
+      const result = await authService.selectPos({
+        posId,
+        userId,
+        token,
+      });
+      sendResponse(res, 200, "POS Terminal selected successfully", result);
+    }catch(error) {
       next(error);
     }
   },
@@ -46,6 +73,18 @@ const authController = {
         ...result?.data,
         headers: undefined,
       });
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  logout: async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      await authService.logout({
+        headers: req.headers,
+        userId: req.user!.id,
+      });
+      sendResponse(res, 200, "Logout successfully", null);
     } catch (error) {
       next(error);
     }

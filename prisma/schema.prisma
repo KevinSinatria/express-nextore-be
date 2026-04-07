@@ -20,6 +20,20 @@ enum Role {
   CASHIER
 }
 
+model Pos {
+  id           String   @id @default(cuid())
+  name         String
+  location     String
+  deviceName   String
+  isActive     Boolean  @default(false)
+  activeUserId String?  @unique
+  activeUser   User?    @relation(fields: [activeUserId], references: [id])
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@map("pos")
+}
+
 model User {
   id              String    @id @default(cuid())
   name            String
@@ -38,21 +52,23 @@ model User {
   updatedAt    DateTime      @updatedAt
   cashShifts   CashShift[]
   auditLogs    AuditLog[]
+  activePos    Pos?
 
   @@map("user")
 }
 
 model Session {
-  id         String   @id @default(cuid())
-  expiresAt  DateTime
-  token      String   @unique
-  createdAt  DateTime
-  updatedAt  DateTime
-  ipAddress  String?
-  userAgent  String?
-  userId     String
-  activeRole Role?
-  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id          String   @id @default(cuid())
+  expiresAt   DateTime
+  token       String   @unique
+  createdAt   DateTime
+  updatedAt   DateTime
+  ipAddress   String?
+  userAgent   String?
+  userId      String
+  activeRole  Role?
+  activePosId String?
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@map("session")

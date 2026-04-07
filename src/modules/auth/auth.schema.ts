@@ -7,6 +7,12 @@ const selectRoleSchema = z.object({
   }),
 });
 
+const selectPosSchema = z.object({
+  body: z.object({
+    posId: z.string().min(1, "POS ID is required"),
+  }),
+});
+
 const loginSchema = z.object({
   body: z.object({
     username: z.string(),
@@ -16,6 +22,7 @@ const loginSchema = z.object({
 
 const authSchema = {
   selectRoleSchema,
+  selectPosSchema,
   loginSchema,
 };
 

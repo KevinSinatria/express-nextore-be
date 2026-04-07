@@ -53,6 +53,7 @@ export const auth = betterAuth({
         },
         select: {
           activeRole: true,
+          activePosId: true,
         },
       });
 
@@ -64,6 +65,7 @@ export const auth = betterAuth({
         session: {
           ...session,
           activeRole: sessionData?.activeRole as Role,
+          activePosId: sessionData?.activePosId,
         },
       };
     }),
