@@ -113,7 +113,7 @@ async function main() {
         sku: faker.string.alphanumeric({ length: 10, casing: "upper" }),
         name: faker.commerce.productName(),
         images: [faker.image.url({ width: 400, height: 400 })],
-        hpp: Math.round(hpp),
+        hppAverage: Math.round(hpp),
         price,
         totalStock: faker.number.int({ min: 10, max: 500 }),
         lowStockThreshold: faker.number.int({ min: 5, max: 30 }),
@@ -148,7 +148,7 @@ async function main() {
     const itemsData = selectedProducts.map((product: any) => {
       const qty = faker.number.int({ min: 1, max: 5 });
       const priceAtSale = product.price;
-      const hppAtSale = product.hpp;
+      const hppAtSale = product.hppAverage;
       const subtotal = qty * priceAtSale;
 
       totalGross += subtotal;

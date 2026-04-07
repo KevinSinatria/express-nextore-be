@@ -22,5 +22,8 @@ export const generateInvoiceNumber = async (): Promise<string> => {
   // 3. Tambah 1 untuk nomor urut dan pad (agar jadi 0001, 0002, dst)
   const nextNumber = (transactionCount + 1).toString().padStart(4, "0");
 
-  return `INV${dateString}${nextNumber}`;
+  // 4. Tambah random suffix untuk keunikan tambahan
+  const randomSuffix = Math.floor(Math.random() * 10000).toString().padStart(4, "0");
+
+  return `INV-${dateString}-${nextNumber}-${randomSuffix}`;
 };

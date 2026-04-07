@@ -25,6 +25,12 @@ type DeleteTransactionRequest = Request<
   z.infer<typeof transactionSchema.deleteTransactionSchema>["params"]
 >;
 
+type UpdatePendingTransactionRequest = Request<
+  z.infer<typeof transactionSchema.updatePendingTransactionSchema>["params"],
+  unknown,
+  z.infer<typeof transactionSchema.updatePendingTransactionSchema>["body"]
+>;
+
 const transactionController = {
   getAllTransaction: async (
     req: GetAllTransactionRequest,
@@ -86,6 +92,26 @@ const transactionController = {
         id: req.params.id,
       });
       sendResponse(res, 200, "Transaction cancelled successfully", result);
+    } catch (error) {
+      next(error);
+    }
+  },
+  updatePendingTransaction: async (
+    req: UpdatePendingTransactionRequest,
+    res: Response,
+    next: NextFunction,
+  ) => {
+    try {
+      const result = await transactionService.updatePendingTransaction({
+        id: req.params.id,
+        data: req.body,
+      });
+      sendResponse(
+        res,
+        200,
+        "Pending transaction updated successfully",
+        result,
+      );
     } catch (error) {
       next(error);
     }

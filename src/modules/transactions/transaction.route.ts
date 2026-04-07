@@ -7,6 +7,8 @@ import {
   isAuthenticated,
 } from "../../middlewares/auth.middleware.js";
 
+import { validateStock } from "../../middlewares/stock.middleware.js";
+
 const transactionRoute = express.Router();
 
 transactionRoute.use(isAuthenticated);
@@ -29,6 +31,7 @@ transactionRoute.post(
   "/",
   authorizeRole(["ADMIN", "SUPERVISOR", "CASHIER"]),
   validate(transactionSchema.createTransactionSchema),
+  validateStock,
   transactionController.createTransaction,
 );
 
@@ -37,6 +40,14 @@ transactionRoute.delete(
   authorizeRole(["ADMIN", "SUPERVISOR"]),
   validate(transactionSchema.deleteTransactionSchema),
   transactionController.deleteTransaction,
+);
+
+transactionRoute.patch(
+  "/:id/update-pending",
+  authorizeRole(["ADMIN", "SUPERVISOR", "CASHIER"]),
+  validate(transactionSchema.updatePendingTransactionSchema),
+  // Tambah fungsi validator atau validateStock jika perlu
+  transactionController.updatePendingTransaction,
 );
 
 export default transactionRoute;
