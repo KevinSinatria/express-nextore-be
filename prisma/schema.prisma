@@ -235,15 +235,21 @@ model BundleComponent {
 }
 
 model StockBatch {
-  id                String    @id @default(cuid())
+  id                String      @id @default(cuid())
   productId         String
-  batchNumber       String    @unique
-  product           Product   @relation(fields: [productId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  batchNumber       String      @unique
+  product           Product     @relation(fields: [productId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   initialQuantity   Int
   remainingQuantity Int
   purchasePrice     Float
   expiryDate        DateTime?
-  createdAt         DateTime  @default(now())
+  createdAt         DateTime    @default(now())
+  status            BatchStatus @default(ACTIVE)
+}
+
+enum BatchStatus {
+  ACTIVE
+  EXPIRED
 }
 
 model CashShift {
@@ -271,4 +277,12 @@ model AuditLog {
 enum ShiftStatus {
   OPEN
   CLOSED
+}
+
+model Setting {
+  id                  String   @id @default("global-setting")
+  expiredReminderDays Int      @default(7)
+  updateAt            DateTime @updatedAt
+
+  @@map("settings")
 }

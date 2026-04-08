@@ -11,7 +11,7 @@ CREATE TYPE "TransactionStatus" AS ENUM ('COMPLETED', 'PENDING', 'CANCELLED');
 CREATE TYPE "ShiftStatus" AS ENUM ('OPEN', 'CLOSED');
 
 -- CreateTable
-CREATE TABLE "Pos" (
+CREATE TABLE "pos" (
     "id" TEXT NOT NULL,
     "name" TEXT NOT NULL,
     "location" TEXT NOT NULL,
@@ -21,7 +21,7 @@ CREATE TABLE "Pos" (
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
-    CONSTRAINT "Pos_pkey" PRIMARY KEY ("id")
+    CONSTRAINT "pos_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -52,6 +52,7 @@ CREATE TABLE "session" (
     "userAgent" TEXT,
     "userId" TEXT NOT NULL,
     "activeRole" "Role",
+    "activePosId" TEXT,
 
     CONSTRAINT "session_pkey" PRIMARY KEY ("id")
 );
@@ -85,23 +86,6 @@ CREATE TABLE "verification" (
     "updatedAt" TIMESTAMP(3),
 
     CONSTRAINT "verification_pkey" PRIMARY KEY ("id")
-);
-
--- CreateTable
-CREATE TABLE "Product" (
-    "id" TEXT NOT NULL,
-    "sku" TEXT NOT NULL,
-    "name" TEXT NOT NULL,
-    "images" TEXT[] DEFAULT ARRAY[]::TEXT[],
-    "hpp" DOUBLE PRECISION NOT NULL,
-    "price" DOUBLE PRECISION NOT NULL,
-    "totalStock" INTEGER NOT NULL DEFAULT 0,
-    "lowStockThreshold" INTEGER NOT NULL DEFAULT 10,
-    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" TIMESTAMP(3) NOT NULL,
-    "categoryId" TEXT,
-
-    CONSTRAINT "Product_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -180,9 +164,40 @@ CREATE TABLE "TransactionItem" (
 );
 
 -- CreateTable
+CREATE TABLE "Product" (
+    "id" TEXT NOT NULL,
+    "sku" TEXT NOT NULL,
+    "name" TEXT NOT NULL,
+    "description" TEXT,
+    "images" TEXT[] DEFAULT ARRAY[]::TEXT[],
+    "hppAverage" DOUBLE PRECISION NOT NULL DEFAULT 0,
+    "price" DOUBLE PRECISION NOT NULL,
+    "isBundle" BOOLEAN NOT NULL DEFAULT false,
+    "totalStock" INTEGER NOT NULL DEFAULT 0,
+    "lowStockThreshold" INTEGER NOT NULL DEFAULT 10,
+    "hasLossAlert" BOOLEAN NOT NULL DEFAULT false,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+    "categoryId" TEXT,
+
+    CONSTRAINT "Product_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "BundleComponent" (
+    "id" TEXT NOT NULL,
+    "bundleProductId" TEXT NOT NULL,
+    "componentId" TEXT NOT NULL,
+    "qty" INTEGER NOT NULL,
+
+    CONSTRAINT "BundleComponent_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
 CREATE TABLE "StockBatch" (
     "id" TEXT NOT NULL,
     "productId" TEXT NOT NULL,
+    "batchNumber" TEXT NOT NULL,
     "initialQuantity" INTEGER NOT NULL,
     "remainingQuantity" INTEGER NOT NULL,
     "purchasePrice" DOUBLE PRECISION NOT NULL,
@@ -235,7 +250,7 @@ CREATE TABLE "_DiscountToTransaction" (
 );
 
 -- CreateIndex
-CREATE UNIQUE INDEX "Pos_activeUserId_key" ON "Pos"("activeUserId");
+CREATE UNIQUE INDEX "pos_activeUserId_key" ON "pos"("activeUserId");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "user_email_key" ON "user"("email");
@@ -259,9 +274,6 @@ CREATE INDEX "account_userId_idx" ON "account"("userId");
 CREATE INDEX "verification_identifier_idx" ON "verification"("identifier");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "Product_sku_key" ON "Product"("sku");
-
--- CreateIndex
 CREATE UNIQUE INDEX "Category_slug_key" ON "Category"("slug");
 
 -- CreateIndex
@@ -271,22 +283,28 @@ CREATE UNIQUE INDEX "Member_phone_key" ON "Member"("phone");
 CREATE UNIQUE INDEX "Transaction_invoiceNumber_key" ON "Transaction"("invoiceNumber");
 
 -- CreateIndex
+CREATE UNIQUE INDEX "Product_sku_key" ON "Product"("sku");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "BundleComponent_bundleProductId_componentId_key" ON "BundleComponent"("bundleProductId", "componentId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "StockBatch_batchNumber_key" ON "StockBatch"("batchNumber");
+
+-- CreateIndex
 CREATE INDEX "_DiscountToProduct_B_index" ON "_DiscountToProduct"("B");
 
 -- CreateIndex
 CREATE INDEX "_DiscountToTransaction_B_index" ON "_DiscountToTransaction"("B");
 
 -- AddForeignKey
-ALTER TABLE "Pos" ADD CONSTRAINT "Pos_activeUserId_fkey" FOREIGN KEY ("activeUserId") REFERENCES "user"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+ALTER TABLE "pos" ADD CONSTRAINT "pos_activeUserId_fkey" FOREIGN KEY ("activeUserId") REFERENCES "user"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "session" ADD CONSTRAINT "session_userId_fkey" FOREIGN KEY ("userId") REFERENCES "user"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "account" ADD CONSTRAINT "account_userId_fkey" FOREIGN KEY ("userId") REFERENCES "user"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "Product" ADD CONSTRAINT "Product_categoryId_fkey" FOREIGN KEY ("categoryId") REFERENCES "Category"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "Transaction" ADD CONSTRAINT "Transaction_userId_fkey" FOREIGN KEY ("userId") REFERENCES "user"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
@@ -301,7 +319,16 @@ ALTER TABLE "TransactionItem" ADD CONSTRAINT "TransactionItem_transactionId_fkey
 ALTER TABLE "TransactionItem" ADD CONSTRAINT "TransactionItem_productId_fkey" FOREIGN KEY ("productId") REFERENCES "Product"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "StockBatch" ADD CONSTRAINT "StockBatch_productId_fkey" FOREIGN KEY ("productId") REFERENCES "Product"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "Product" ADD CONSTRAINT "Product_categoryId_fkey" FOREIGN KEY ("categoryId") REFERENCES "Category"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "BundleComponent" ADD CONSTRAINT "BundleComponent_bundleProductId_fkey" FOREIGN KEY ("bundleProductId") REFERENCES "Product"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "BundleComponent" ADD CONSTRAINT "BundleComponent_componentId_fkey" FOREIGN KEY ("componentId") REFERENCES "Product"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "StockBatch" ADD CONSTRAINT "StockBatch_productId_fkey" FOREIGN KEY ("productId") REFERENCES "Product"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "CashShift" ADD CONSTRAINT "CashShift_userId_fkey" FOREIGN KEY ("userId") REFERENCES "user"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
