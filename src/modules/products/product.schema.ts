@@ -15,16 +15,11 @@ const getProductByIdSchema = z.object({
   }),
 });
 
-//  domain.com/product/nama-produk
-//  domain.com/product?limit=10&page=1
-
 const createProductSchema = z.object({
   body: z.object({
     name: z.string().min(3).max(100),
     sku: z.string().min(3).max(100),
-    hpp: z.coerce.number(),
     price: z.coerce.number(),
-    stock: z.coerce.number(),
     lowStockThreshold: z.coerce.number(),
     categoryId: z.string(),
   }),
@@ -37,9 +32,7 @@ const updateProductSchema = z.object({
   body: z.object({
     name: z.string().min(3).max(100),
     sku: z.string().min(3).max(100),
-    hpp: z.coerce.number(),
     price: z.coerce.number(),
-    stock: z.coerce.number(),
     lowStockThreshold: z.coerce.number(),
     categoryId: z.string(),
   }),

@@ -106,24 +106,6 @@ model Verification {
   @@map("verification")
 }
 
-model Product {
-  id                String            @id @default(cuid())
-  sku               String            @unique
-  name              String
-  images            String[]          @default([])
-  hpp               Float
-  price             Float
-  totalStock        Int               @default(0)
-  lowStockThreshold Int               @default(10)
-  items             TransactionItem[]
-  createdAt         DateTime          @default(now())
-  updatedAt         DateTime          @updatedAt
-  category          Category?         @relation(fields: [categoryId], references: [id])
-  categoryId        String?
-  discount          Discount[]
-  stockBatches      StockBatch[]
-}
-
 model Discount {
   id                 String       @id @default(cuid())
   name               String
@@ -210,10 +192,53 @@ model TransactionItem {
   subtotal      Float
 }
 
+model Product {
+  id                String            @id @default(cuid())
+  sku               String            @unique
+  name              String
+  description       String?
+  images            String[]          @default([])
+  hppAverage        Float             @default(0)
+  price             Float
+  isBundle          Boolean           @default(false)
+  totalStock        Int               @default(0)
+  lowStockThreshold Int               @default(10)
+  hasLossAlert      Boolean           @default(false)
+  items             TransactionItem[]
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+  category          Category?         @relation(fields: [categoryId], references: [id])
+  categoryId        String?
+  discount          Discount[]
+  stockBatches      StockBatch[]
+  // Relasi: Jika produk ini ADALAH sebuah paket, maka dia punya daftar isi
+  bundleComponents  BundleComponent[] @relation("BundleParent")
+
+  // Relasi: Jika produk ini BAGIAN dari paket lain (opsional)
+  asComponentIn BundleComponent[] @relation("ComponentChild")
+}
+
+model BundleComponent {
+  id String @id @default(cuid())
+
+  // Paket utamanya (si Label/Parcel)
+  bundleProductId String
+  bundleProduct   Product @relation("BundleParent", fields: [bundleProductId], references: [id], onDelete: Cascade)
+
+  // Isi dari paket tersebut (Produk satuannya)
+  componentId String
+  component   Product @relation("ComponentChild", fields: [componentId], references: [id])
+
+  qty Int
+
+  @@unique([bundleProductId, componentId])
+}
+
 model StockBatch {
   id                String    @id @default(cuid())
   productId         String
-  product           Product   @relation(fields: [productId], references: [id])
+  batchNumber       String    @unique
+  product           Product   @relation(fields: [productId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   initialQuantity   Int
   remainingQuantity Int
   purchasePrice     Float

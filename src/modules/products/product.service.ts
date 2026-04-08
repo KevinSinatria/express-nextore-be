@@ -8,6 +8,7 @@ import {
 } from "../../utils/pagination.js";
 import { deleteImage, uploadImage } from "../../utils/cloudinary.js";
 import { CustomError } from "../../utils/custom-error.js";
+import categoryRoute from "../categories/category.route.js";
 
 type GetAllProductsParams = z.infer<typeof productSchema.getAllProductsSchema>;
 type GetProductByIdParams = z.infer<typeof productSchema.getProductByIdSchema>;
@@ -67,6 +68,11 @@ const productService = {
         take: limit || 10,
         include: {
           category: true,
+          bundleComponents: {
+            include: {
+              component: true,
+            },
+          },
         },
       }),
       prisma.product.count({
@@ -90,6 +96,11 @@ const productService = {
         },
         include: {
           category: true,
+          bundleComponents: {
+            include: {
+              component: true,
+            },
+          },
         },
       });
 
@@ -111,23 +122,36 @@ const productService = {
     data: CreateProductParams["body"];
     files: Express.Multer.File[] | undefined;
   }) => {
-    const { name, sku, hpp, price, stock, lowStockThreshold, categoryId } =
-      data;
+    const { name, sku, price, lowStockThreshold, categoryId } = data;
     let imageUrls: string[] = [];
 
     try {
+      const category = await prisma.category.findUnique({
+        where: {
+          id: categoryId,
+        },
+        select: {
+          id: true,
+        },
+      });
+
+      if (!category) {
+        throw new CustomError(404, `Category with ID ${categoryId} not found.`);
+      }
+
       if (files && files.length > 0) {
         imageUrls = await Promise.all(
           files.map((file) => uploadImage(file.buffer, "products")),
         );
       }
+
       const product = await prisma.product.create({
         data: {
           name,
           sku,
-          hpp: Number(hpp),
+          hppAverage: 0,
           price: Number(price),
-          stock: Number(stock),
+          totalStock: 0,
           images: imageUrls,
           lowStockThreshold: Number(lowStockThreshold),
           categoryId,
@@ -152,11 +176,23 @@ const productService = {
     data: UpdateProductParams["body"];
     files: Express.Multer.File[] | undefined;
   }) => {
-    const { name, sku, hpp, price, stock, lowStockThreshold, categoryId } =
-      data;
+    const { name, sku, price, lowStockThreshold, categoryId } = data;
     let newImageUrls: string[] | null = null;
 
     try {
+      const category = await prisma.category.findUnique({
+        where: {
+          id: categoryId,
+        },
+        select: {
+          id: true,
+        },
+      });
+
+      if (!category) {
+        throw new CustomError(404, `Category with ID ${categoryId} not found.`);
+      }
+
       const existingProduct = await prisma.product.findUniqueOrThrow({
         where: {
           id,
@@ -177,9 +213,7 @@ const productService = {
         data: {
           name,
           sku,
-          hpp: Number(hpp),
           price: Number(price),
-          stock: Number(stock),
           lowStockThreshold: Number(lowStockThreshold),
           categoryId,
           ...(newImageUrls && { images: newImageUrls }),
@@ -239,7 +273,7 @@ const productService = {
   alertLowStock: async () => {
     const products = await prisma.product.findMany({
       where: {
-        stock: {
+        totalStock: {
           lt: prisma.product.fields.lowStockThreshold,
         },
       },

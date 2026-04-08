@@ -26,8 +26,8 @@ const updateCategorySchema = z.object({
     id: z.string(),
   }),
   body: z.object({
-    name: z.string().min(3).max(100),
-    hasExpiry: z.boolean().optional().default(false),
+    name: z.string().min(3).max(100).optional(),
+    hasExpiry: z.boolean().optional(),
   }),
 });
 
