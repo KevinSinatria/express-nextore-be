@@ -1,11 +1,28 @@
 -- CreateEnum
-CREATE TYPE "Role" AS ENUM ('ADMIN', 'SUPERVISOR', 'CASHIER');
+CREATE TYPE "Role" AS ENUM ('SUPERUSER', 'ADMIN', 'SUPERVISOR', 'CASHIER');
 
 -- CreateEnum
 CREATE TYPE "DiscountType" AS ENUM ('PERCENTAGE', 'FIXED_AMOUNT');
 
 -- CreateEnum
 CREATE TYPE "TransactionStatus" AS ENUM ('COMPLETED', 'PENDING', 'CANCELLED');
+
+-- CreateEnum
+CREATE TYPE "ShiftStatus" AS ENUM ('OPEN', 'CLOSED');
+
+-- CreateTable
+CREATE TABLE "Pos" (
+    "id" TEXT NOT NULL,
+    "name" TEXT NOT NULL,
+    "location" TEXT NOT NULL,
+    "deviceName" TEXT NOT NULL,
+    "isActive" BOOLEAN NOT NULL DEFAULT false,
+    "activeUserId" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "Pos_pkey" PRIMARY KEY ("id")
+);
 
 -- CreateTable
 CREATE TABLE "user" (
@@ -14,9 +31,10 @@ CREATE TABLE "user" (
     "image" TEXT,
     "email" TEXT,
     "emailVerified" BOOLEAN NOT NULL DEFAULT false,
-    "role" "Role" NOT NULL DEFAULT 'CASHIER',
+    "roles" "Role"[] DEFAULT ARRAY['CASHIER']::"Role"[],
     "username" TEXT NOT NULL,
     "displayUsername" TEXT,
+    "lastActive" TIMESTAMP(3),
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
@@ -33,6 +51,7 @@ CREATE TABLE "session" (
     "ipAddress" TEXT,
     "userAgent" TEXT,
     "userId" TEXT NOT NULL,
+    "activeRole" "Role",
 
     CONSTRAINT "session_pkey" PRIMARY KEY ("id")
 );
@@ -76,7 +95,7 @@ CREATE TABLE "Product" (
     "images" TEXT[] DEFAULT ARRAY[]::TEXT[],
     "hpp" DOUBLE PRECISION NOT NULL,
     "price" DOUBLE PRECISION NOT NULL,
-    "stock" INTEGER NOT NULL DEFAULT 0,
+    "totalStock" INTEGER NOT NULL DEFAULT 0,
     "lowStockThreshold" INTEGER NOT NULL DEFAULT 10,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
@@ -107,6 +126,8 @@ CREATE TABLE "Discount" (
 CREATE TABLE "Category" (
     "id" TEXT NOT NULL,
     "name" TEXT NOT NULL,
+    "slug" TEXT NOT NULL,
+    "hasExpiry" BOOLEAN NOT NULL DEFAULT false,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
@@ -127,11 +148,15 @@ CREATE TABLE "Member" (
 CREATE TABLE "Transaction" (
     "id" TEXT NOT NULL,
     "invoiceNumber" TEXT NOT NULL,
+    "customerName" TEXT,
     "totalGross" DOUBLE PRECISION NOT NULL,
     "totalDiscount" DOUBLE PRECISION NOT NULL DEFAULT 0,
     "totalNet" DOUBLE PRECISION NOT NULL,
     "totalProfit" DOUBLE PRECISION NOT NULL,
+    "totalHpp" DOUBLE PRECISION NOT NULL DEFAULT 0,
     "paymentMethod" TEXT NOT NULL,
+    "cashReceived" DOUBLE PRECISION,
+    "change" DOUBLE PRECISION,
     "status" "TransactionStatus" NOT NULL DEFAULT 'PENDING',
     "userId" TEXT NOT NULL,
     "memberId" TEXT,
@@ -155,6 +180,45 @@ CREATE TABLE "TransactionItem" (
 );
 
 -- CreateTable
+CREATE TABLE "StockBatch" (
+    "id" TEXT NOT NULL,
+    "productId" TEXT NOT NULL,
+    "initialQuantity" INTEGER NOT NULL,
+    "remainingQuantity" INTEGER NOT NULL,
+    "purchasePrice" DOUBLE PRECISION NOT NULL,
+    "expiryDate" TIMESTAMP(3),
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "StockBatch_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "CashShift" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "startTime" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "endTime" TIMESTAMP(3),
+    "startingCash" DOUBLE PRECISION NOT NULL,
+    "expectedCash" DOUBLE PRECISION,
+    "actualCash" DOUBLE PRECISION,
+    "difference" DOUBLE PRECISION,
+    "status" "ShiftStatus" NOT NULL DEFAULT 'OPEN',
+
+    CONSTRAINT "CashShift_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "AuditLog" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "action" TEXT NOT NULL,
+    "details" JSONB,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "AuditLog_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
 CREATE TABLE "_DiscountToProduct" (
     "A" TEXT NOT NULL,
     "B" TEXT NOT NULL,
@@ -169,6 +233,9 @@ CREATE TABLE "_DiscountToTransaction" (
 
     CONSTRAINT "_DiscountToTransaction_AB_pkey" PRIMARY KEY ("A","B")
 );
+
+-- CreateIndex
+CREATE UNIQUE INDEX "Pos_activeUserId_key" ON "Pos"("activeUserId");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "user_email_key" ON "user"("email");
@@ -195,6 +262,9 @@ CREATE INDEX "verification_identifier_idx" ON "verification"("identifier");
 CREATE UNIQUE INDEX "Product_sku_key" ON "Product"("sku");
 
 -- CreateIndex
+CREATE UNIQUE INDEX "Category_slug_key" ON "Category"("slug");
+
+-- CreateIndex
 CREATE UNIQUE INDEX "Member_phone_key" ON "Member"("phone");
 
 -- CreateIndex
@@ -205,6 +275,9 @@ CREATE INDEX "_DiscountToProduct_B_index" ON "_DiscountToProduct"("B");
 
 -- CreateIndex
 CREATE INDEX "_DiscountToTransaction_B_index" ON "_DiscountToTransaction"("B");
+
+-- AddForeignKey
+ALTER TABLE "Pos" ADD CONSTRAINT "Pos_activeUserId_fkey" FOREIGN KEY ("activeUserId") REFERENCES "user"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "session" ADD CONSTRAINT "session_userId_fkey" FOREIGN KEY ("userId") REFERENCES "user"("id") ON DELETE CASCADE ON UPDATE CASCADE;
@@ -226,6 +299,15 @@ ALTER TABLE "TransactionItem" ADD CONSTRAINT "TransactionItem_transactionId_fkey
 
 -- AddForeignKey
 ALTER TABLE "TransactionItem" ADD CONSTRAINT "TransactionItem_productId_fkey" FOREIGN KEY ("productId") REFERENCES "Product"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "StockBatch" ADD CONSTRAINT "StockBatch_productId_fkey" FOREIGN KEY ("productId") REFERENCES "Product"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "CashShift" ADD CONSTRAINT "CashShift_userId_fkey" FOREIGN KEY ("userId") REFERENCES "user"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "AuditLog" ADD CONSTRAINT "AuditLog_userId_fkey" FOREIGN KEY ("userId") REFERENCES "user"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "_DiscountToProduct" ADD CONSTRAINT "_DiscountToProduct_A_fkey" FOREIGN KEY ("A") REFERENCES "Discount"("id") ON DELETE CASCADE ON UPDATE CASCADE;
