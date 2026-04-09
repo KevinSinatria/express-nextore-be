@@ -22,8 +22,14 @@ tags:
     description: Discount management endpoints
   - name: Members
     description: Member management endpoints
+  - name: Stock Batches
+    description: Pengelolaan batch stok produk (FIFO/HPP)
+  - name: Bundles
+    description: Pengelolaan produk paket (bundling)
   - name: Users
-    description: User management endpoints (Admin only)
+    description: Pengelolaan data pengguna/staf sistem (Admin only)
+  - name: Reports
+    description: Pelaporan transaksi penjualan dan inventaris stok
 
 components:
   securitySchemes:
@@ -79,13 +85,13 @@ components:
 
     Product:
       type: object
-      required: [id, sku, name, hpp, price, stock, categoryId]
+      required: [id, sku, name, hppAverage, price, totalStock, categoryId]
       properties:
         id:
           type: string
           format: cuid
-          description: "ID unik produk dalam format CUID (Collision-resistant Unique Identifier)."
-          example: "clj1234567890abcdefg"
+          description: "ID unik produk dalam format CUID."
+          example: "prod123456789"
         sku:
           type: string
           minLength: 3
@@ -98,6 +104,10 @@ components:
           maxLength: 100
           description: "Nama produk."
           example: "Kopi Susu Gula Aren"
+        description:
+          type: string
+          nullable: true
+          description: "Deskripsi detail mengenai produk."
         images:
           type: array
           items:
@@ -105,26 +115,34 @@ components:
             format: uri
           description: "Daftar URL gambar produk."
           example: ["https://example.com/image.jpg"]
-        hpp:
+        hppAverage:
           type: number
-          description: "Harga Pokok Penjualan (modal)."
+          description: "Harga Pokok Penjualan (HPP) rata-rata."
           example: 15000
         price:
           type: number
           description: "Harga jual produk."
           example: 25000
-        stock:
+        totalStock:
           type: integer
-          description: "Jumlah stok yang tersedia."
+          description: "Total jumlah stok yang tersedia dari semua batch."
           example: 50
         lowStockThreshold:
           type: integer
           description: "Ambang batas stok rendah untuk peringatan."
           example: 10
+        isBundle:
+          type: boolean
+          description: "Menunjukkan apakah produk ini adalah produk paket (bundle)."
+          default: false
+        hasLossAlert:
+          type: boolean
+          description: "Menunjukkan apakah produk ini memiliki peringatan kerugian (HPP > Harga Jual)."
+          default: false
         categoryId:
           type: string
           format: cuid
-          description: "ID kategori produk dalam format CUID."
+          description: "ID kategori produk."
           example: "cat123456789"
         createdAt:
           type: string
@@ -137,7 +155,7 @@ components:
 
     Category:
       type: object
-      required: [id, name]
+      required: [id, name, slug]
       properties:
         id:
           type: string
@@ -150,6 +168,15 @@ components:
           maxLength: 100
           description: "Nama kategori."
           example: "Minuman"
+        slug:
+          type: string
+          description: "Slug unik untuk kategori (URL-friendly)."
+          example: "minuman-segar"
+        hasExpiry:
+          type: boolean
+          description: "Menunjukkan apakah produk dalam kategori ini memiliki tanggal kedaluwarsa."
+          default: false
+          example: false
         createdAt:
           type: string
           format: date-time
@@ -169,6 +196,7 @@ components:
           totalDiscount,
           totalNet,
           totalProfit,
+          totalHpp,
           paymentMethod,
           status,
           userId,
@@ -184,6 +212,11 @@ components:
           type: string
           description: "Nomor invoice unik untuk transaksi."
           example: "INV-20231025-001"
+        customerName:
+          type: string
+          nullable: true
+          description: "Nama pelanggan (wajib jika status PENDING)."
+          example: "John Doe"
         totalGross:
           type: number
           description: "Total kotor transaksi sebelum diskon."
@@ -194,21 +227,35 @@ components:
           example: 5000
         totalNet:
           type: number
-          description: "Total bersih transaksi setelah diskon."
+          description: "Total bersih transaksi setelah diskon (apa yang dibayarkan pelanggan)."
           example: 45000
         totalProfit:
           type: number
-          description: "Total keuntungan dari transaksi ini."
+          description: "Total keuntungan bersih dari transaksi ini."
           example: 10000
+        totalHpp:
+          type: number
+          description: "Total Harga Pokok Penjualan (HPP) untuk transaksi ini."
+          example: 35000
         paymentMethod:
           type: string
-          description: "Metode pembayaran yang digunakan (misal: CASH, QRIS)."
+          description: "Metode pembayaran yang digunakan (CASH, QRIS, dll)."
           example: "CASH"
+        cashReceived:
+          type: number
+          nullable: true
+          description: "Jumlah uang tunai yang diterima (untuk pembayaran CASH)."
+          example: 50000
+        change:
+          type: number
+          nullable: true
+          description: "Jumlah uang kembalian."
+          example: 5000
         memberId:
           type: string
           format: cuid
           nullable: true
-          description: "ID member jika transaksi menggunakan member (format CUID)."
+          description: "ID member jika transaksi menggunakan member."
           example: "mem123456789"
         status:
           type: string
@@ -218,7 +265,7 @@ components:
         userId:
           type: string
           format: cuid
-          description: "ID user (kasir) yang menangani transaksi (format CUID)."
+          description: "ID user (kasir) yang menangani transaksi."
           example: "user123456789"
         createdAt:
           type: string
@@ -268,6 +315,10 @@ components:
           type: boolean
           description: "Apakah diskon berlaku untuk seluruh transaksi."
           example: false
+        isMemberLevel:
+          type: boolean
+          description: "Apakah diskon hanya tersedia untuk member."
+          example: false
         createdAt:
           type: string
           format: date-time
@@ -308,17 +359,17 @@ components:
 
     User:
       type: object
-      required: [id, name, username, role, createdAt, updatedAt]
+      required: [id, name, username, roles, createdAt, updatedAt]
       properties:
         id:
           type: string
           format: cuid
-          description: "ID unik user/staf dalam format CUID."
-          example: "user123456789"
+          description: "ID unik user/staf dalam format CUID (Collision-resistant Unique Identifier)."
+          example: "clj1234567890abcdefg"
         name:
           type: string
           minLength: 1
-          maxLength: 20
+          maxLength: 50
           description: "Nama lengkap user."
           example: "Andi Wijaya"
         username:
@@ -328,11 +379,28 @@ components:
           pattern: "^[a-zA-Z0-9_]{1,20}$"
           description: "Username unik untuk login."
           example: "andi_cashier"
-        role:
+        displayUsername:
           type: string
-          enum: [ADMIN, SUPERVISOR, CASHIER]
-          description: "Peran atau hak akses user dalam sistem."
-          example: "CASHIER"
+          nullable: true
+          description: "Nama tampilan user (opsional)."
+          example: "Andi W."
+        image:
+          type: string
+          format: uri
+          nullable: true
+          description: "URL foto profil user."
+        roles:
+          type: array
+          items:
+            type: string
+            enum: [SUPERUSER, ADMIN, SUPERVISOR, CASHIER]
+          description: "Daftar peran atau hak akses user dalam sistem."
+          example: ["CASHIER"]
+        lastActive:
+          type: string
+          format: date-time
+          nullable: true
+          description: "Waktu terakhir user aktif di sistem."
         createdAt:
           type: string
           format: date-time
@@ -345,7 +413,16 @@ components:
     TransactionItem:
       type: object
       required:
-        [id, transactionId, productId, qty, priceAtSale, hppAtSale, subtotal]
+        [
+          id,
+          transactionId,
+          productId,
+          qty,
+          priceAtSale,
+          hppAtSale,
+          totalDiscount,
+          subtotal,
+        ]
       properties:
         id:
           type: string
@@ -374,6 +451,10 @@ components:
           type: number
           description: "Harga pokok penjualan (modal) pada saat transaksi."
           example: 15000
+        totalDiscount:
+          type: number
+          description: "Total diskon untuk baris item ini."
+          example: 0
         subtotal:
           type: number
           description: "Subtotal untuk item ini (setelah diskon)."
@@ -406,6 +487,86 @@ components:
           type: boolean
           description: "Apakah ada halaman sebelumnya."
           example: false
+
+    StockBatch:
+      type: object
+      required:
+        [
+          id,
+          productId,
+          batchNumber,
+          initialQuantity,
+          remainingQuantity,
+          purchasePrice,
+          createdAt,
+        ]
+      properties:
+        id:
+          type: string
+          format: cuid
+          description: "ID unik batch stok."
+          example: "sb123456789"
+        productId:
+          type: string
+          format: cuid
+          description: "ID produk terkait."
+        batchNumber:
+          type: string
+          description: "Nomor batch unik (untuk pelacakan FIFO)."
+          example: "BATCH-2023-001"
+        initialQuantity:
+          type: integer
+          description: "Jumlah kuantitas awal saat batch dibuat."
+          example: 100
+        remainingQuantity:
+          type: integer
+          description: "Jumlah kuantitas yang tersisa (stok aktif)."
+          example: 45
+        purchasePrice:
+          type: number
+          description: "Harga beli per unit untuk batch ini (HPP batch)."
+          example: 15000
+        expiryDate:
+          type: string
+          format: date-time
+          nullable: true
+          description: "Tanggal kedaluwarsa untuk batch ini (jika ada)."
+        createdAt:
+          type: string
+          format: date-time
+          description: "Waktu batch stok ditambahkan."
+
+    Bundle:
+      allOf:
+        - $ref: "#/components/schemas/Product"
+        - type: object
+          properties:
+            components:
+              type: array
+              items:
+                $ref: "#/components/schemas/BundleComponent"
+
+    BundleComponent:
+      type: object
+      required: [id, bundleProductId, componentId, qty]
+      properties:
+        id:
+          type: string
+          format: cuid
+        bundleProductId:
+          type: string
+          format: cuid
+          description: "ID produk paket (parent)."
+        componentId:
+          type: string
+          format: cuid
+          description: "ID produk satuan (child)."
+        qty:
+          type: integer
+          description: "Jumlah unit produk satuan dalam paket."
+          example: 1
+        component:
+          $ref: "#/components/schemas/Product"
 
   responses:
     BadRequest:
@@ -440,13 +601,13 @@ components:
             $ref: "#/components/schemas/Error"
 
 paths:
-  /api/auth/sign-in/username:
+  /auth/login:
     post:
       tags:
         - Auth
-      summary: "Masuk dengan username"
-      operationId: signInWithUsername
-      description: "Melakukan autentikasi pengguna ke dalam sistem menggunakan kombinasi username dan kata sandi."
+      summary: "Masuk kustom dengan username"
+      operationId: loginCustom
+      description: "Melakukan autentikasi menggunakan username dan password. Jika user memiliki lebih dari satu peran (role), maka respons akan meminta user untuk melakukan pemilihan role aktif."
       requestBody:
         required: true
         content:
@@ -457,16 +618,14 @@ paths:
               properties:
                 username:
                   type: string
-                  description: "Username unik akun pengguna."
                   example: "andi_cashier"
                 password:
                   type: string
                   format: password
-                  description: "Kata sandi akun pengguna."
                   example: "Password123"
       responses:
         "200":
-          description: "Berhasil masuk ke sistem."
+          description: "Berhasil terautentikasi."
           content:
             application/json:
               schema:
@@ -476,38 +635,54 @@ paths:
                     properties:
                       data:
                         type: object
-                        required: [token, user]
+                        required: [requiresRoleSelection]
                         properties:
-                          token:
-                            type: string
-                            description: "Token autentikasi sesi."
-                            example: "cIvDQ09nW7aFVTyE3h79KqPwnfhV6Ddr"
-                          user:
-                            $ref: "#/components/schemas/User"
-        "400":
-          $ref: "#/components/responses/BadRequest"
+                          requiresRoleSelection:
+                            type: boolean
+                            description: "Apakah user perlu memilih role aktif (jika role > 1)."
+                            example: true
+                          availableRoles:
+                            type: array
+                            items:
+                              type: string
+                            description: "Daftar role yang tersedia untuk dipilih."
+                            example: ["ADMIN", "CASHIER"]
         "401":
           $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
 
-  /api/auth/sign-out:
+  /auth/select-role:
     post:
       tags:
         - Auth
-      summary: "Keluar dari sistem"
-      operationId: signOut
-      description: "Mengakhiri sesi aktif pengguna dan menghapus token autentikasi dari browser."
+      summary: "Pilih role aktif"
+      operationId: selectRole
+      description: "Memilih role aktif untuk sesi ini. Endpoint ini dipanggil setelah login jika user memiliki lebih dari satu role."
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [role]
+              properties:
+                role:
+                  type: string
+                  enum: [SUPERUSER, ADMIN, SUPERVISOR, CASHIER]
+                  description: "Role yang ingin diaktifkan."
       responses:
         "200":
-          description: "Berhasil keluar dari sistem."
+          description: "Role berhasil dipilih."
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  success:
-                    type: boolean
-                    description: "Status keberhasilan operasi."
-                    example: true
+                $ref: "#/components/schemas/BaseResponse"
+        "403":
+          description: "User tidak memiliki izin untuk role yang dipilih."
+          $ref: "#/components/responses/Forbidden"
 
   /api/auth/get-session:
     get:
@@ -515,7 +690,7 @@ paths:
         - Auth
       summary: "Ambil sesi saat ini"
       operationId: getSession
-      description: "Mendapatkan informasi detail mengenai sesi aktif dan data profil pengguna yang sedang masuk."
+      description: "Mendapatkan informasi detail mengenai sesi aktif, data profil pengguna, roles lengkap, dan activeRole saat ini."
       responses:
         "200":
           description: "Data sesi berhasil ditemukan."
@@ -528,10 +703,8 @@ paths:
                     properties:
                       data:
                         type: object
-                        required: [userData, user, session]
+                        required: [user, session]
                         properties:
-                          userData:
-                            $ref: "#/components/schemas/User"
                           user:
                             $ref: "#/components/schemas/User"
                           session:
@@ -539,12 +712,14 @@ paths:
                             properties:
                               id:
                                 type: string
-                                format: cuid
                               token:
                                 type: string
                               userId:
                                 type: string
-                                format: cuid
+                              activeRole:
+                                type: string
+                                enum: [SUPERUSER, ADMIN, SUPERVISOR, CASHIER]
+                                description: "Role yang sedang aktif digunakan dalam sesi ini."
                               expiresAt:
                                 type: string
                                 format: date-time
@@ -560,6 +735,25 @@ paths:
                                 type: string
         "401":
           $ref: "#/components/responses/Unauthorized"
+
+  /api/auth/sign-out:
+    post:
+      tags:
+        - Auth
+      summary: "Keluar dari sistem"
+      operationId: signOut
+      description: "Mengakhiri sesi aktif pengguna menggunakan Better Auth handler."
+      responses:
+        "200":
+          description: "Berhasil keluar."
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
 
   /products:
     get:
@@ -615,7 +809,7 @@ paths:
         - Products
       summary: "Tambah produk baru"
       operationId: createProduct
-      description: "Menambahkan produk baru ke dalam inventori toko beserta unggahan gambar."
+      description: "Menambahkan produk baru ke dalam inventori toko. HPP rata-rata dan total stok akan diinisialisasi ke 0 dan diperbarui melalui batch stok."
       security:
         - cookieAuth: []
       requestBody:
@@ -624,47 +818,36 @@ paths:
           multipart/form-data:
             schema:
               type: object
-              required: [name, sku, hpp, price, stock, categoryId]
+              required: [name, sku, price, lowStockThreshold, categoryId]
               properties:
                 name:
                   type: string
                   minLength: 3
                   maxLength: 100
-                  description: "Nama produk."
                   example: "Kopi Susu Gula Aren"
                 sku:
                   type: string
                   minLength: 3
                   maxLength: 100
-                  description: "Kode SKU produk."
                   example: "KOPI-001"
-                hpp:
-                  type: number
-                  description: "Harga Pokok Penjualan (modal)."
-                  example: 15000
                 price:
                   type: number
                   description: "Harga jual produk."
                   example: 25000
-                stock:
-                  type: number
-                  description: "Jumlah stok awal."
-                  example: 50
                 lowStockThreshold:
                   type: number
-                  description: "Ambang batas stok rendah."
+                  description: "Ambang batas stok rendah untuk peringatan."
                   example: 10
                 categoryId:
                   type: string
                   format: cuid
-                  description: "ID kategori produk (format CUID)."
                   example: "cat123456789"
                 images:
                   type: array
                   items:
                     type: string
                     format: binary
-                  description: "File gambar produk (format file)."
+                  description: "File gambar produk (maksimal 5 file)."
       responses:
         "201":
           description: "Produk berhasil ditambahkan."
@@ -766,29 +949,21 @@ paths:
                   type: string
                   minLength: 3
                   maxLength: 100
-                  description: "Nama produk baru."
                   example: "Kopi Susu Gula Aren Spesial"
                 sku:
                   type: string
                   minLength: 3
                   maxLength: 100
                   example: "KOPI-001-S"
-                hpp:
-                  type: number
-                  example: 16000
                 price:
                   type: number
                   example: 27000
-                stock:
-                  type: number
-                  example: 60
                 lowStockThreshold:
                   type: number
                   example: 15
                 categoryId:
                   type: string
                   format: cuid
-                  description: "ID kategori baru (format CUID)."
                   example: "cat123456789"
                 images:
                   type: array
@@ -903,8 +1078,11 @@ paths:
                   type: string
                   minLength: 3
                   maxLength: 100
-                  description: "Nama kategori baru."
                   example: "Makanan Ringan"
+                hasExpiry:
+                  type: boolean
+                  description: "Apakah produk dalam kategori ini memiliki tanggal kedaluwarsa."
+                  default: false
       responses:
         "201":
           description: "Kategori berhasil dibuat."
@@ -978,8 +1156,9 @@ paths:
                   type: string
                   minLength: 3
                   maxLength: 100
-                  description: "Nama kategori baru."
                   example: "Snack & Cemilan"
+                hasExpiry:
+                  type: boolean
       responses:
         "200":
           description: "Kategori berhasil diperbarui."
@@ -1083,6 +1262,10 @@ paths:
               type: object
               required: [paymentMethod, items]
               properties:
+                customerName:
+                  type: string
+                  description: "Nama pelanggan (wajib jika status PENDING)."
+                  example: "John Doe"
                 paymentMethod:
                   type: string
                   description: "Metode pembayaran (misal: CASH, QRIS)."
@@ -1096,7 +1279,7 @@ paths:
                   type: string
                   enum: [PENDING, COMPLETED, CANCELLED]
                   default: PENDING
-                  description: "Status awal transaksi."
+                  description: "Status awal transaksi. Gunakan PENDING jika pembayaran belum dilakukan."
                   example: "COMPLETED"
                 items:
                   type: array
@@ -1158,6 +1341,66 @@ paths:
                     properties:
                       data:
                         $ref: "#/components/schemas/Transaction"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    patch:
+      tags:
+        - Transactions
+      summary: "Perbarui transaksi pending"
+      operationId: updatePendingTransaction
+      description: "Memperbarui data transaksi yang masih berstatus PENDING, seperti mengubah item atau status menjadi COMPLETED."
+      security:
+        - cookieAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: cuid
+          description: "ID unik transaksi PENDING (format CUID)."
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                customerName:
+                  type: string
+                paymentMethod:
+                  type: string
+                memberId:
+                  type: string
+                  format: cuid
+                status:
+                  type: string
+                  enum: [PENDING, COMPLETED, CANCELLED]
+                items:
+                  type: array
+                  items:
+                    type: object
+                    required: [productId, qty]
+                    properties:
+                      productId:
+                        type: string
+                        format: cuid
+                      qty:
+                        type: integer
+      responses:
+        "200":
+          description: "Transaksi berhasil diperbarui."
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/BaseResponse"
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/Transaction"
+        "400":
+          $ref: "#/components/responses/BadRequest"
         "404":
           $ref: "#/components/responses/NotFound"
     delete:
@@ -1700,12 +1943,13 @@ paths:
                   minLength: 8
                   description: "Kata sandi akun."
                   example: "Password123"
-                role:
-                  type: string
-                  enum: [ADMIN, SUPERVISOR, CASHIER]
-                  default: CASHIER
-                  description: "Peran atau hak akses."
-                  example: "CASHIER"
+                roles:
+                  type: array
+                  items:
+                    type: string
+                    enum: [SUPERUSER, ADMIN, SUPERVISOR, CASHIER]
+                  description: "Daftar peran akses user."
+                  example: ["CASHIER"]
       responses:
         "201":
           description: "Pengguna berhasil dibuat."
@@ -1827,10 +2071,12 @@ paths:
                   maxLength: 20
                   pattern: "^[a-zA-Z0-9_]{1,20}$"
                   description: "Username baru."
-                role:
-                  type: string
-                  enum: [ADMIN, SUPERVISOR, CASHIER]
-                  description: "Peran baru."
+                roles:
+                  type: array
+                  items:
+                    type: string
+                    enum: [SUPERUSER, ADMIN, SUPERVISOR, CASHIER]
+                  description: "Daftar peran baru."
       responses:
         "200":
           description: "Data pengguna berhasil diperbarui."
@@ -1876,3 +2122,139 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         "404":
           $ref: "#/components/responses/NotFound"
+
+  /reports/sales/analytics:
+    get:
+      tags:
+        - Reports
+      summary: "Ambil analitik performa penjualan"
+      operationId: getSalesAnalytics
+      description: "Menghitung agregat total omzet (net), total profit, total gross, volume transaksi, dan item terjual. Dapat difilter berdasarkan rentang waktu, user ID (kasir), dan pos ID."
+      security:
+        - cookieAuth: []
+      parameters:
+        - in: query
+          name: startDate
+          schema:
+            type: string
+            format: date-time
+          description: "Waktu awal rentang transaksi"
+        - in: query
+          name: endDate
+          schema:
+            type: string
+            format: date-time
+          description: "Waktu akhir rentang transaksi"
+        - in: query
+          name: userId
+          schema:
+            type: string
+          description: "ID user kasir"
+        - in: query
+          name: posId
+          schema:
+            type: string
+          description: "ID terminal POS"
+      responses:
+        "200":
+          description: "Berhasil mendapatkan analitik penjualan"
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/BaseResponse"
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          totalOmzet:
+                            type: number
+                          totalProfit:
+                            type: number
+                          totalGross:
+                            type: number
+                          volumeTransactions:
+                            type: integer
+                          volumeItems:
+                            type: integer
+
+  /reports/sales/audit:
+    get:
+      tags:
+        - Reports
+      summary: "Ambil audit trail penjualan"
+      operationId: getSalesAuditTrail
+      description: "Mendapatkan log tiap transaksi dengan detail lengkap termasuk timestamp, kasir, profit per transaksi, dan mesin POS yang digunakan. Mendukung filter rentang waktu, user, dan export CSV."
+      security:
+        - cookieAuth: []
+      parameters:
+        - in: query
+          name: page
+          schema:
+            type: string
+        - in: query
+          name: limit
+          schema:
+            type: string
+        - in: query
+          name: startDate
+          schema:
+            type: string
+            format: date-time
+        - in: query
+          name: endDate
+          schema:
+            type: string
+            format: date-time
+        - in: query
+          name: userId
+          schema:
+            type: string
+        - in: query
+          name: posId
+          schema:
+            type: string
+        - in: query
+          name: format
+          schema:
+            type: string
+            enum: [json, csv, excel, pdf]
+          description: "Format export hasil (jika csv, akan mengunduh CSV langsung)"
+      responses:
+        "200":
+          description: "Daftar audit trail transaksi"
+
+  /reports/inventory/expiry:
+    get:
+      tags:
+        - Reports
+      summary: "Ambil peringatan kedaluwarsa stok"
+      operationId: getInventoryExpiry
+      description: "Melihat riwayat batch yang memilki sisa stok > 0 dan masa kedaluwarsa berada di bawah ambang batas (contoh: 30 hari ke depan)."
+      security:
+        - cookieAuth: []
+      parameters:
+        - in: query
+          name: page
+          schema:
+            type: string
+        - in: query
+          name: limit
+          schema:
+            type: string
+        - in: query
+          name: daysThreshold
+          schema:
+            type: string
+            default: "30"
+          description: "Ambang batas jumlah hari peringatan dari hari ini"
+        - in: query
+          name: format
+          schema:
+            type: string
+            enum: [json, csv, excel, pdf]
+          description: "Format tipe keluaran laporan"
+      responses:
+        "200":
+          description: "Daftar batch kedaluwarsa"

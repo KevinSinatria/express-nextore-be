@@ -28,6 +28,7 @@ model Pos {
   isActive     Boolean  @default(false)
   activeUserId String?  @unique
   activeUser   User?    @relation(fields: [activeUserId], references: [id])
+  transactions Transaction[]
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
@@ -164,6 +165,8 @@ model Transaction {
 
   userId   String
   user     User              @relation(fields: [userId], references: [id])
+  posId    String?
+  pos      Pos?              @relation(fields: [posId], references: [id])
   memberId String?
   member   Member?           @relation(fields: [memberId], references: [id])
   items    TransactionItem[]

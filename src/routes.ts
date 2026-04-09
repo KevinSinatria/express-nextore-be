@@ -9,6 +9,7 @@ import authRoute from "./modules/auth/auth.route.js";
 import posRoute from "./modules/pos/pos.route.js";
 import bundleRoute from "./modules/bundles/bundle.route.js";
 import stockBatchRoute from "./modules/stock-batches/stock-batch.route.js";
+import reportRoute from "./modules/reports/report.route.js";
 
 const routes = express.Router();
 
@@ -22,5 +23,6 @@ routes.use("/auth", authRoute);
 routes.use("/pos", posRoute);
 routes.use("/bundles", bundleRoute);
 routes.use("/stock-batches", stockBatchRoute);
+routes.use("/reports", reportRoute);
 
 export default routes;

@@ -158,9 +158,11 @@ const transactionService = {
   createTransaction: async ({
     data,
     userId,
+    posId,
   }: {
     data: createTransactionParams["body"];
     userId: string;
+    posId?: string;
   }) => {
     const { memberId, items, paymentMethod, customerName, status } = data;
     const invoiceNumber = await generateInvoiceNumber();
@@ -379,6 +381,7 @@ const transactionService = {
           status,
           customerName: customerName ?? null,
           userId,
+          posId: posId ?? null,
           memberId: memberId ?? null,
           items: {
             create: transactionItems,

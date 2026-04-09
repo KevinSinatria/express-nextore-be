@@ -108,7 +108,7 @@ const categoryService = {
     data: UpdateCategoryParams["body"];
   }) => {
     const { name, hasExpiry } = data;
-    const slug = name.toLowerCase().replace(/\s+/g, "-");
+    const slug = name?.toLowerCase().replace(/\s+/g, "-");
 
     try {
       const category = await prisma.category.update({
@@ -116,9 +116,9 @@ const categoryService = {
           id,
         },
         data: {
-          name,
-          slug,
-          hasExpiry,
+          ...(name && { name }),
+          ...(slug && { slug }),
+          ...(hasExpiry !== undefined && { hasExpiry }),
         },
       });
 
