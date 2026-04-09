@@ -1,7 +1,21 @@
 openapi: 3.0.0
 info:
   title: Nextore API
-  description: API Documentation for Nextore Backend
+  description: |
+    API Documentation for Nextore Backend.
+
+    ### Alur Autentikasi (Auth Flow):
+    Sistem menggunakan sistem autentikasi bertingkat untuk memastikan keamanan dan penugasan terminal yang tepat:
+    1. **Login (`/auth/login`)**: Pengguna memasukkan `username` dan `password`.
+       - Jika pengguna hanya memiliki 1 role, role tersebut otomatis aktif.
+       - Jika pengguna memiliki > 1 role, flag `requiresRoleSelection` akan bernilai `true`.
+    2. **Pilih Role (`/auth/select-role`)**: Diperlukan jika `requiresRoleSelection` adalah `true`. Pengguna memilih satu role aktif untuk sesi tersebut.
+    3. **Pilih POS (`/auth/select-pos`)**: Diperlukan bagi pengguna dengan role `CASHIER` atau `SUPERVISOR`. Pengguna harus memilih terminal POS yang akan digunakan sebelum dapat melakukan transaksi.
+    
+    ### Akun Pengujian (QA):
+    Terdapat akun pengujian dengan akses ke **semua role** (SUPERUSER, ADMIN, SUPERVISOR, CASHIER).
+    - **Username:** `qa_tester`
+    - **Password:** `password123`
   version: 1.0.0
 servers:
   - url: http://localhost:5000
@@ -568,6 +582,108 @@ components:
         component:
           $ref: "#/components/schemas/Product"
 
+    Pos:
+      type: object
+      required: [id, name, location, deviceName, isActive, createdAt, updatedAt]
+      properties:
+        id:
+          type: string
+          format: cuid
+          description: "ID unik terminal POS."
+          example: "pos123456789"
+        name:
+          type: string
+          description: "Nama register/terminal."
+          example: "Cashier Register 1"
+        location:
+          type: string
+          description: "Lokasi fisik terminal."
+          example: "Lantai 1 Utama"
+        deviceName:
+          type: string
+          description: "Nama perangkat keras yang terhubung."
+          example: "POS-MCH-01"
+        isActive:
+          type: boolean
+          description: "Status aktif terminal."
+          example: true
+        activeUserId:
+          type: string
+          format: cuid
+          nullable: true
+          description: "ID kasir yang sedang aktif di terminal ini."
+          example: "user123456789"
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    CashShift:
+      type: object
+      required: [id, userId, startTime, startingCash, status]
+      properties:
+        id:
+          type: string
+          format: cuid
+          description: "ID unik shift."
+          example: "shift12345"
+        userId:
+          type: string
+          format: cuid
+          description: "ID kasir yang membuka shift."
+          example: "user123456789"
+        startTime:
+          type: string
+          format: date-time
+        endTime:
+          type: string
+          format: date-time
+          nullable: true
+        startingCash:
+          type: number
+          description: "Saldo awal tunai."
+          example: 500000
+        expectedCash:
+          type: number
+          nullable: true
+          description: "Ekspektasi saldo berdasarkan transaksi tunai."
+        actualCash:
+          type: number
+          nullable: true
+          description: "Tunai aktual saat shift ditutup."
+        difference:
+          type: number
+          nullable: true
+          description: "Selisih kurang/lebih."
+        status:
+          type: string
+          enum: [OPEN, CLOSED]
+          description: "Status shift."
+          example: "OPEN"
+
+    AuditLog:
+      type: object
+      required: [id, userId, action, createdAt]
+      properties:
+        id:
+          type: string
+          format: cuid
+        userId:
+          type: string
+          format: cuid
+        action:
+          type: string
+          description: "Tindakan yang dilakukan."
+        details:
+          type: object
+          nullable: true
+          description: "Detail data tambahan."
+        createdAt:
+          type: string
+          format: date-time
+
   responses:
     BadRequest:
       description: Permintaan tidak valid (Bad Request).
@@ -682,6 +798,39 @@ paths:
                 $ref: "#/components/schemas/BaseResponse"
         "403":
           description: "User tidak memiliki izin untuk role yang dipilih."
+          $ref: "#/components/responses/Forbidden"
+
+  /auth/select-pos:
+    post:
+      tags:
+        - Auth
+      summary: "Pilih terminal POS aktif"
+      operationId: selectPos
+      description: "Menugaskan terminal POS tertentu ke sesi pengguna saat ini. Diperlukan sebelum melakukan transaksi bagi Kasir/Supervisor."
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [posId]
+              properties:
+                posId:
+                  type: string
+                  description: "ID terminal POS yang dipilih (format CUID)."
+                  example: "pos123456789"
+      responses:
+        "200":
+          description: "Terminal POS berhasil dipilih."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BaseResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
           $ref: "#/components/responses/Forbidden"
 
   /api/auth/get-session:
@@ -2258,3 +2407,570 @@ paths:
       responses:
         "200":
           description: "Daftar batch kedaluwarsa"
+
+  /pos:
+    get:
+      tags:
+        - POS Terminals
+      summary: "Ambil daftar POS terminal"
+      operationId: getPosTerminals
+      description: "Mendapatkan daftar terminal POS yang tersedia untuk digunakan."
+      security:
+        - cookieAuth: []
+      responses:
+        "200":
+          description: "Berhasil"
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/BaseResponse"
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/Pos"
+    post:
+      tags:
+        - POS Terminals
+      summary: "Tambah POS terminal baru"
+      operationId: createPos
+      description: "Mendaftarkan terminal POS baru ke dalam sistem (Admin only)."
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, location, deviceName]
+              properties:
+                name:
+                  type: string
+                  example: "Kasir Depan"
+                location:
+                  type: string
+                  example: "Lantai 1"
+                deviceName:
+                  type: string
+                  example: "POS-DEVICE-01"
+      responses:
+        "201":
+          description: "Berhasil dibuat"
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/BaseResponse"
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/Pos"
+
+  /pos/{id}:
+    get:
+      tags:
+        - POS Terminals
+      summary: "Ambil detail POS terminal"
+      operationId: getPosById
+      description: "Mendapatkan informasi detail mengenai satu terminal POS."
+      security:
+        - cookieAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: cuid
+      responses:
+        "200":
+          description: "Berhasil"
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/BaseResponse"
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/Pos"
+    put:
+      tags:
+        - POS Terminals
+      summary: "Perbarui POS terminal"
+      operationId: updatePos
+      description: "Memperbarui informasi nama, lokasi, atau nama perangkat terminal POS (Admin only)."
+      security:
+        - cookieAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: cuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                location:
+                  type: string
+                deviceName:
+                  type: string
+      responses:
+        "200":
+          description: "Berhasil diperbarui"
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/BaseResponse"
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/Pos"
+    delete:
+      tags:
+        - POS Terminals
+      summary: "Hapus POS terminal"
+      operationId: deletePos
+      description: "Menghapus terminal POS dari sistem (Admin only)."
+      security:
+        - cookieAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: cuid
+      responses:
+        "200":
+          description: "Berhasil dihapus"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BaseResponse"
+
+  /stock-batches:
+    get:
+      tags:
+        - Stock Batches
+      summary: "Ambil master stock batches"
+      operationId: getStockBatches
+      description: "Mendapatkan daftar batch stok yang terkait dengan inventaris, menggunakan pendekatan hybrid FIFO & LIFO HPP/Moving Average."
+      security:
+        - cookieAuth: []
+      parameters:
+        - in: query
+          name: limit
+          schema:
+            type: string
+            default: "10"
+        - in: query
+          name: page
+          schema:
+            type: string
+            default: "1"
+      responses:
+        "200":
+          description: "Berhasil"
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/BaseResponse"
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/StockBatch"
+                      meta:
+                        $ref: "#/components/schemas/PaginationMeta"
+    post:
+      tags:
+        - Stock Batches
+      summary: "Buat batch stok baru"
+      operationId: createStockBatch
+      description: "Menambahkan batch stok baru untuk sebuah produk dan memperbarui HPP rata-ratanya."
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [productId, batchNumber, initialQuantity, purchasePrice]
+              properties:
+                productId:
+                  type: string
+                  format: cuid
+                batchNumber:
+                  type: string
+                initialQuantity:
+                  type: integer
+                purchasePrice:
+                  type: number
+                expiryDate:
+                  type: string
+                  format: date-time
+      responses:
+        "201":
+          description: "Berhasil dibuat"
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/BaseResponse"
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/StockBatch"
+
+  /stock-batches/{id}:
+    get:
+      tags:
+        - Stock Batches
+      summary: "Detail batch stok"
+      operationId: getStockBatchById
+      description: "Mengambil detail dari sebuah batch stok berdasarkan ID-nya."
+      security:
+        - cookieAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: cuid
+      responses:
+        "200":
+          description: "Berhasil"
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/BaseResponse"
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/StockBatch"
+    patch:
+      tags:
+        - Stock Batches
+      summary: "Update batch stok"
+      operationId: updateStockBatch
+      description: "Memperbarui data suatu batch stok (misalnya karena salah input awal)."
+      security:
+        - cookieAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: cuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                batchNumber:
+                  type: string
+                initialQuantity:
+                  type: integer
+                purchasePrice:
+                  type: number
+                expiryDate:
+                  type: string
+                  format: date-time
+      responses:
+        "200":
+          description: "Berhasil diperbarui"
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/BaseResponse"
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/StockBatch"
+    delete:
+      tags:
+        - Stock Batches
+      summary: "Hapus batch stok"
+      operationId: deleteStockBatch
+      description: "Menghapus data batch stok (Hanya bisa dilakukan jika belum ada transaksi yang menggunakannya)."
+      security:
+        - cookieAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: cuid
+      responses:
+        "200":
+          description: "Berhasil dihapus"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BaseResponse"
+
+  /stock-batches/product/{productId}:
+    get:
+      tags:
+        - Stock Batches
+      summary: "Ambil batch stok berdasarkan ID Produk"
+      operationId: getStockBatchesByProductId
+      description: "Mengambil seluruh batch historis yang masuk untuk suatu produk tertentu."
+      security:
+        - cookieAuth: []
+      parameters:
+        - in: path
+          name: productId
+          required: true
+          schema:
+            type: string
+            format: cuid
+      responses:
+        "200":
+          description: "Berhasil"
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/BaseResponse"
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/StockBatch"
+
+  /bundles:
+    get:
+      tags:
+        - Bundles
+      summary: "Daftar paket bundle"
+      operationId: getBundles
+      description: "Mengambil daftar paket bundle yang telah dikonfigurasi, konsisten dengan format paginasi product."
+      security:
+        - cookieAuth: []
+      parameters:
+        - in: query
+          name: limit
+          schema:
+            type: string
+            default: "10"
+        - in: query
+          name: page
+          schema:
+            type: string
+            default: "1"
+        - in: query
+          name: search
+          schema:
+            type: string
+      responses:
+        "200":
+          description: "Berhasil"
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/BaseResponse"
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/Bundle"
+                      meta:
+                        $ref: "#/components/schemas/PaginationMeta"
+    post:
+      tags:
+        - Bundles
+      summary: "Buat paket bundle baru"
+      operationId: createBundle
+      description: "Membuat produk tipe paket/bundle yang terdiri dari komponen relasional produk-produk lain."
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [name, sku, price, categoryId, components]
+              properties:
+                name:
+                  type: string
+                sku:
+                  type: string
+                price:
+                  type: number
+                categoryId:
+                  type: string
+                  format: cuid
+                images:
+                  type: array
+                  items:
+                    type: string
+                    format: binary
+                components:
+                  type: string
+                  description: "JSON stringified array of objects { componentId: string, qty: number }"
+                  example: '[{"componentId": "cuid123", "qty": 2}]'
+      responses:
+        "201":
+          description: "Berhasil"
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/BaseResponse"
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/Bundle"
+
+  /bundles/{id}:
+    get:
+      tags:
+        - Bundles
+      summary: "Detail paket bundle"
+      operationId: getBundleById
+      description: "Mengambil informasi detail mengenai daftar produk komponen sebuah paket."
+      security:
+        - cookieAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: cuid
+      responses:
+        "200":
+          description: "Berhasil"
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/BaseResponse"
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/Bundle"
+    patch:
+      tags:
+        - Bundles
+      summary: "Perbarui paket bundle"
+      operationId: updateBundle
+      description: "Memperbarui informasi nama, harga, atau komponen paket bundle."
+      security:
+        - cookieAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: cuid
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                sku:
+                  type: string
+                price:
+                  type: number
+                categoryId:
+                  type: string
+                  format: cuid
+                images:
+                  type: array
+                  items:
+                    type: string
+                    format: binary
+                components:
+                  type: string
+                  description: "JSON stringified array of objects { componentId: string, qty: number }"
+      responses:
+        "200":
+          description: "Berhasil diperbarui"
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/BaseResponse"
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/Bundle"
+    delete:
+      tags:
+        - Bundles
+      summary: "Hapus paket bundle"
+      operationId: deleteBundle
+      description: "Menghapus sebuah bundle (Cascade delete komponennya)."
+      security:
+        - cookieAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: cuid
+      responses:
+        "200":
+          description: "Berhasil dihapus"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BaseResponse"
+
+  /users:
+    get:
+      tags:
+        - Users
+      summary: "Ambil daftar user/staf"
+      operationId: getUsers
+      description: "Mendapatkan daftar user/staf (hanya untuk Admin & Superuser)."
+      security:
+        - cookieAuth: []
+      responses:
+        "200":
+          description: "Berhasil"
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/BaseResponse"
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/User"

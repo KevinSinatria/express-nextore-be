@@ -8,8 +8,14 @@ async function main() {
 
   // Clear existing data (order matters due to foreign keys)
   console.log("Clearing existing database...");
+  await prisma.auditLog.deleteMany();
+  await prisma.bundleComponent.deleteMany();
+  await prisma.stockBatch.deleteMany();
   await prisma.transactionItem.deleteMany();
   await prisma.transaction.deleteMany();
+  await prisma.discount.deleteMany();
+  await prisma.cashShift.deleteMany();
+  await prisma.pos.deleteMany();
   await prisma.member.deleteMany();
   await prisma.product.deleteMany();
   await prisma.category.deleteMany();
@@ -27,7 +33,7 @@ async function main() {
     body: {
       username: "superuser",
       password: "superuser123",
-      name: "superuser",
+      name: "Superuser",
       email: `superuser@placeholder.local`,
     },
   });
@@ -37,13 +43,29 @@ async function main() {
   });
   users.push(superuser.user);
 
+  // QA Tester (All roles)
+  console.log("Creating QA Tester...");
+  const qaTester = await auth.api.signUpEmail({
+    body: {
+      username: "qa_tester",
+      password: "password123",
+      name: "QA Tester",
+      email: `qa_tester@placeholder.local`,
+    },
+  });
+  await prisma.user.update({
+    where: { id: qaTester.user.id },
+    data: { roles: ["SUPERUSER", "ADMIN", "SUPERVISOR", "CASHIER"] },
+  });
+  users.push(qaTester.user);
+
   // Admin
   console.log("Creating Admin...");
   const admin = await auth.api.signUpEmail({
     body: {
       username: "admin",
       password: "admin123",
-      name: "admin",
+      name: "Admin",
       email: `admin@placeholder.local`,
     },
   });
@@ -59,7 +81,7 @@ async function main() {
     body: {
       username: "supervisor",
       password: "supervisor123",
-      name: "supervisor",
+      name: "Supervisor",
       email: `supervisor@placeholder.local`,
     },
   });
@@ -76,7 +98,7 @@ async function main() {
       body: {
         username: `cashier${i}`,
         password: `cashier123`,
-        name: `cashier${i}`,
+        name: `Cashier ${i}`,
         email: `cashier${i}@placeholder.local`,
       },
     });
@@ -87,46 +109,138 @@ async function main() {
     users.push(cashier.user);
   }
 
-  // 2. Seed Categories
+  // 2. Seed POS Terminals
+  console.log("Seeding POS Terminals...");
+  const posTerminals = [];
+  for (let i = 1; i <= 3; i++) {
+    const pos = await prisma.pos.create({
+      data: {
+        name: `Cashier Register ${i}`,
+        location: `Main Branch - F${i}`,
+        deviceName: `POS-MCH-${i}`,
+      },
+    });
+    posTerminals.push(pos);
+  }
+
+  // 3. Seed CashShifts for Cashiers
+  console.log("Seeding Cash Shifts...");
+  const shifts = [];
+  for (const cashier of users.filter((u) => u.roles?.includes("CASHIER"))) {
+    const shift = await prisma.cashShift.create({
+      data: {
+        userId: cashier.id,
+        startingCash: 500000,
+        expectedCash: 0,
+        status: "OPEN",
+      },
+    });
+    shifts.push(shift);
+  }
+
+  // 4. Seed Categories
   console.log("Seeding Categories...");
   const categories = [];
   for (let i = 0; i < 15; i++) {
     const category = await prisma.category.create({
       data: {
         name: faker.commerce.department(),
+        hasExpiry: faker.datatype.boolean({ probability: 0.3 }),
       },
     });
     categories.push(category);
   }
 
-  // 3. Seed Products
-  console.log("Seeding Products...");
+  // 5. Seed Products, Bundles, and StockBatches
+  console.log("Seeding Products and StockBatches...");
   const products = [];
-  for (let i = 0; i < 150; i++) {
-    const hpp = parseFloat(faker.commerce.price({ min: 5000, max: 200000 }));
-    // Margin between 10% and 50%
-    const margin = faker.number.float({ min: 1.1, max: 1.5 });
-    const price = Math.round(hpp * margin);
+  for (let i = 0; i < 50; i++) {
+    const isBundle = i >= 40; // Last 10 are bundles
+    const hpp = parseFloat(faker.commerce.price({ min: 5000, max: 150000 }));
+    const price = Math.round(hpp * 1.3);
+    const category = faker.helpers.arrayElement(categories);
 
     const product = await prisma.product.create({
       data: {
         sku: faker.string.alphanumeric({ length: 10, casing: "upper" }),
-        name: faker.commerce.productName(),
+        name: isBundle
+          ? `Paket ${faker.commerce.productName()}`
+          : faker.commerce.productName(),
         images: [faker.image.url({ width: 400, height: 400 })],
-        hppAverage: Math.round(hpp),
+        hppAverage: isBundle ? 0 : Math.round(hpp),
         price,
-        totalStock: faker.number.int({ min: 10, max: 500 }),
-        lowStockThreshold: faker.number.int({ min: 5, max: 30 }),
-        categoryId: faker.helpers.arrayElement(categories).id,
+        totalStock: isBundle ? 0 : faker.number.int({ min: 50, max: 200 }),
+        lowStockThreshold: 10,
+        isBundle,
+        categoryId: category.id,
       },
     });
     products.push(product);
+
+    if (!isBundle) {
+      let expiryDate = category.hasExpiry ? faker.date.future() : null;
+      await prisma.stockBatch.create({
+        data: {
+          productId: product.id,
+          batchNumber: `BATCH-${Date.now()}-${i}`,
+          initialQuantity: product.totalStock,
+          remainingQuantity: product.totalStock,
+          purchasePrice: product.hppAverage,
+          expiryDate,
+        },
+      });
+    }
   }
 
-  // 4. Seed Members
+  // Set Bundle Components
+  console.log("Setting Bundle Components...");
+  const bundles = products.filter((p) => p.isBundle);
+  const regularProducts = products.filter((p) => !p.isBundle);
+  for (const bundle of bundles) {
+    const componentCount = faker.number.int({ min: 2, max: 4 });
+    const selectedComponents = faker.helpers.arrayElements(
+      regularProducts,
+      componentCount,
+    );
+
+    let bundleHpp = 0;
+    for (const comp of selectedComponents) {
+      const qty = faker.number.int({ min: 1, max: 3 });
+      await prisma.bundleComponent.create({
+        data: {
+          bundleProductId: bundle.id,
+          componentId: comp.id,
+          qty,
+        },
+      });
+      bundleHpp += comp.hppAverage * qty;
+    }
+
+    await prisma.product.update({
+      where: { id: bundle.id },
+      data: { hppAverage: bundleHpp },
+    });
+  }
+
+  // 6. Seed Discounts
+  console.log("Seeding Discounts...");
+  const discount = await prisma.discount.create({
+    data: {
+      name: "Promo Weekend Berkah",
+      description: "Diskon akhir pekan untuk pelanggan setia",
+      type: "PERCENTAGE",
+      value: 10,
+      startDate: faker.date.recent(),
+      endDate: faker.date.future(),
+      isActive: true,
+      isTransactionLevel: true,
+    },
+  });
+
+  // 7. Seed Members
   console.log("Seeding Members...");
   const members = [];
-  for (let i = 0; i < 100; i++) {
+  for (let i = 0; i < 50; i++) {
     const member = await prisma.member.create({
       data: {
         name: faker.person.fullName(),
@@ -136,9 +250,9 @@ async function main() {
     members.push(member);
   }
 
-  // 5. Seed Transactions (and TransactionItems)
+  // 8. Seed Transactions (and TransactionItems)
   console.log("Seeding Transactions and Items...");
-  for (let i = 0; i < 500; i++) {
+  for (let i = 0; i < 200; i++) {
     const numItems = faker.number.int({ min: 1, max: 8 });
     const selectedProducts = faker.helpers.arrayElements(products, numItems);
 
@@ -163,12 +277,11 @@ async function main() {
       };
     });
 
-    const possibleDiscounts = [0, 0, 0, 5000, 10000, 15000, 20000];
-    let totalDiscount = faker.helpers.arrayElement(possibleDiscounts);
+    const isDiscounted = faker.datatype.boolean({ probability: 0.3 });
+    let totalDiscount = 0;
 
-    // discount can't be more than gross
-    if (totalDiscount >= totalGross) {
-      totalDiscount = 0;
+    if (isDiscounted) {
+      totalDiscount = (totalGross * discount.value) / 100;
     }
 
     const totalNet = totalGross - totalDiscount;
@@ -200,8 +313,11 @@ async function main() {
           "DEBIT",
           "CREDIT_CARD",
         ]),
+        cashReceived: status === "COMPLETED" ? totalNet : null,
+        change: status === "COMPLETED" ? 0 : null,
         status,
         userId: faker.helpers.arrayElement(users).id,
+        posId: faker.helpers.arrayElement(posTerminals).id,
         memberId,
         createdAt,
         items: {
@@ -210,9 +326,8 @@ async function main() {
       },
     });
 
-    // Logging progress every 100 records to show something is happening
-    if ((i + 1) % 100 === 0) {
-      console.log(`  -> created ${i + 1} / 500 transactions...`);
+    if ((i + 1) % 50 === 0) {
+      console.log(`  -> created ${i + 1} / 200 transactions...`);
     }
   }
 
