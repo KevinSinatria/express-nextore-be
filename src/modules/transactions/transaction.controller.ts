@@ -72,9 +72,11 @@ const transactionController = {
   ) => {
     try {
       const userId = req.user!.id;
+      const posId = req.session?.activePosId;
       const result = await transactionService.createTransaction({
         data: req.body,
         userId,
+        ...(posId && { posId }),
       });
 
       sendResponse(res, 201, "Transaction created successfully", result);
