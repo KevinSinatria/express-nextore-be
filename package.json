@@ -13,6 +13,9 @@
     "test:setup": "tsx scripts/setup-test-db.ts",
     "test": "DATABASE_URL=\"postgresql://nextore_admin:dTdxuuBjH8Eb%2FFQh9QGIL7WlE8AsoVGjlaf6ij6o6xE%3D@localhost:5432/nextore_test?schema=public\" vitest run"
   },
+  "prisma": {
+    "seed": "npx tsx prisma/seed.ts"
+  },
   "keywords": [],
   "author": "Kevin Sinatria",
   "license": "ISC",
