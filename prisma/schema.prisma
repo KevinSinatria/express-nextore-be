@@ -21,16 +21,16 @@ enum Role {
 }
 
 model Pos {
-  id           String   @id @default(cuid())
+  id           String        @id @default(cuid())
   name         String
   location     String
   deviceName   String
-  isActive     Boolean  @default(false)
-  activeUserId String?  @unique
-  activeUser   User?    @relation(fields: [activeUserId], references: [id])
+  isActive     Boolean       @default(false)
+  activeUserId String?       @unique
+  activeUser   User?         @relation(fields: [activeUserId], references: [id])
   transactions Transaction[]
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
 
   @@map("pos")
 }
@@ -203,6 +203,7 @@ model Product {
   images            String[]          @default([])
   hppAverage        Float             @default(0)
   price             Float
+  unit              String            @default("pcs") @db.VarChar(50)
   isBundle          Boolean           @default(false)
   totalStock        Int               @default(0)
   lowStockThreshold Int               @default(10)
