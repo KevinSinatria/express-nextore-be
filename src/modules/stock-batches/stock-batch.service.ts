@@ -9,6 +9,7 @@ import {
 import { CustomError } from "../../utils/custom-error.js";
 import { generateBatchNumber } from "../../utils/generateBatchNumber.js";
 import { checkLossAlert, syncBundleHpp } from "../../utils/inventoryLogic.js";
+import notificationService from "../notifications/notification.service.js";
 
 type CreateStockBatchParams = z.infer<
   typeof stockBatchSchema.createStockBatchSchema
@@ -179,6 +180,10 @@ const stockBatchService = {
 
       return newBatch;
     });
+
+    if(expiryDate) {
+      notificationService.triggerRealtimeNotification();
+    }
   },
 
   updateStockBatch: async ({
