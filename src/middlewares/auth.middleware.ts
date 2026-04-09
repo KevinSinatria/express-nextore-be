@@ -46,3 +46,16 @@ export const authorizeRole = (allowedRoles: string[]) => {
     next();
   };
 };
+
+export const requireActivePos = (req: Request, res: Response, next: NextFunction) => {
+  const session = req.session;
+  
+  if (!session?.activePosId) {
+    return res.status(403).json({
+      success: false,
+      message: "Forbidden: You must select a POS machine before performingany transactions.",
+    });
+  }
+
+  next();
+}
