@@ -6,7 +6,15 @@ const notificationRoute = express.Router();
 
 notificationRoute.use(isAuthenticated);
 
-notificationRoute.get("/expired", notificationController.getExpired);
+notificationRoute.get("/expired", notificationController.getExpiredList);
+
+notificationRoute.post("/trigger-test", notificationController.triggerExpiryCheck);
+
+notificationRoute.get("/inbox", notificationController.getInbox);
+
+notificationRoute.patch("/inbox/:id/read", notificationController.markRead);
+
+notificationRoute.delete("/inbox/:id", notificationController.remove);
 
 notificationRoute.post("/setting", authorizeRole(["ADMIN"]), notificationController.setDays);
 

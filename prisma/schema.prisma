@@ -47,12 +47,13 @@ model User {
   accounts        Account[]
   lastActive      DateTime?
 
-  transactions Transaction[]
-  createdAt    DateTime      @default(now())
-  updatedAt    DateTime      @updatedAt
-  cashShifts   CashShift[]
-  auditLogs    AuditLog[]
-  activePos    Pos?
+  transactions  Transaction[]
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  cashShifts    CashShift[]
+  auditLogs     AuditLog[]
+  activePos     Pos?
+  notifications Notification[]
 
   @@map("user")
 }
@@ -285,4 +286,16 @@ model Setting {
   updateAt            DateTime @updatedAt
 
   @@map("settings")
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title     String
+  message   String
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@map("notifications")
 }
