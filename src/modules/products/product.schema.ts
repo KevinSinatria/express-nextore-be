@@ -21,6 +21,7 @@ const createProductSchema = z.object({
     sku: z.string().min(3).max(100),
     price: z.coerce.number(),
     lowStockThreshold: z.coerce.number(),
+    unit: z.string().optional().default("pcs"),
     categoryId: z.string(),
   }),
 });
@@ -34,6 +35,7 @@ const updateProductSchema = z.object({
     sku: z.string().min(3).max(100),
     price: z.coerce.number(),
     lowStockThreshold: z.coerce.number(),
+    unit: z.string().optional().default("pcs"),
     categoryId: z.string(),
   }),
 });

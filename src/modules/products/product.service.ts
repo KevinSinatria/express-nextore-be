@@ -122,7 +122,7 @@ const productService = {
     data: CreateProductParams["body"];
     files: Express.Multer.File[] | undefined;
   }) => {
-    const { name, sku, price, lowStockThreshold, categoryId } = data;
+    const { name, sku, price, lowStockThreshold, categoryId, unit } = data;
     let imageUrls: string[] = [];
 
     try {
@@ -152,6 +152,7 @@ const productService = {
           hppAverage: 0,
           price: Number(price),
           totalStock: 0,
+          unit,
           images: imageUrls,
           lowStockThreshold: Number(lowStockThreshold),
           categoryId,
@@ -176,7 +177,7 @@ const productService = {
     data: UpdateProductParams["body"];
     files: Express.Multer.File[] | undefined;
   }) => {
-    const { name, sku, price, lowStockThreshold, categoryId } = data;
+    const { name, sku, price, lowStockThreshold, categoryId, unit } = data;
     let newImageUrls: string[] | null = null;
 
     try {
@@ -216,6 +217,7 @@ const productService = {
           price: Number(price),
           lowStockThreshold: Number(lowStockThreshold),
           categoryId,
+          unit,
           ...(newImageUrls && { images: newImageUrls }),
         },
       });
