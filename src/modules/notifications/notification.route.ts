@@ -12,6 +12,8 @@ notificationRoute.post("/trigger-test", notificationController.triggerExpiryChec
 
 notificationRoute.get("/inbox", notificationController.getInbox);
 
+notificationRoute.patch("/inbox/readAll", notificationController.markAllRead);
+
 notificationRoute.patch("/inbox/:id/read", notificationController.markRead);
 
 notificationRoute.delete("/inbox/:id", notificationController.remove);

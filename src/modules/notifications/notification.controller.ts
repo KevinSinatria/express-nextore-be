@@ -41,6 +41,16 @@ const notificationController = {
         }
     },
 
+    markAllRead: async (req: Request, res: Response, next: NextFunction) => {
+        try {
+            const userId = (req as any).user.id;
+            const result = await notificationService.markAllRead(userId);
+            sendResponse(res, 200, "All notifications marjed as read", result);
+        } catch(error){
+            next(error);
+        }
+    },
+
     remove: async (req: Request, res: Response, next: NextFunction) => {
         try {
             const {id} = req.params;

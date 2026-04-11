@@ -91,6 +91,13 @@ const notificationService = {
         });
     },
 
+    markAllRead: async (userId: string) => {
+        return await prisma.notification.updateMany({
+            where: {userId},
+            data: {isRead: true}
+        });
+    },
+
     deleteNotification: async (id: string) => {
         return await prisma.notification.delete({
             where: {id}

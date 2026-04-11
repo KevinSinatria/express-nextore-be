@@ -69,6 +69,7 @@ const memberService = {
       data: {
         name: data.name,
         phone: data.phone ?? "",
+        isActive: true,
       },
     });
   },
@@ -94,6 +95,22 @@ const memberService = {
         data: updateData,
       });
       return member;
+    } catch (err) {
+      if (err instanceof Prisma.PrismaClientKnownRequestError) {
+        if (err.code === "P2025") {
+          throw new CustomError(404, `Member with ID "${id}" not found`);
+        }
+      }
+      throw err;
+    }
+  },
+
+  toggleStatus: async (id: string, isActive: boolean) => {
+    try {
+      return await prisma.member.update({
+        where: {id},
+        data: {isActive},
+      });
     } catch (err) {
       if (err instanceof Prisma.PrismaClientKnownRequestError) {
         if (err.code === "P2025") {

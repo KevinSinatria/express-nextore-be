@@ -145,6 +145,7 @@ model Member {
   id           String        @id @default(cuid())
   name         String
   phone        String        @unique
+  isActive     Boolean       @default(true)
   transactions Transaction[]
   createdAt    DateTime      @default(now())
 }
