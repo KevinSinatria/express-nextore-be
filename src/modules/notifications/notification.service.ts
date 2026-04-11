@@ -7,13 +7,17 @@ const notificationService = {
         const days = setting?.expiredReminderDays || 7;
 
         const today = new Date ();
-        const thresholdDate = new Date();
-        thresholdDate.setDate(today.getDate() + days);
+        const startOfToday = new Date(today);
+        startOfToday.setHours(0,0,0,0);
+
+        const thresholdDate = new Date(startOfToday);
+        thresholdDate.setDate(startOfToday.getDate() + days);
 
         const batches = await prisma.stockBatch.findMany({
             where: {
                 remainingQuantity: {gt:0},
                 expiryDate: {
+                    gte: startOfToday,
                     lte: thresholdDate,
                 },
             },
@@ -45,12 +49,59 @@ const notificationService = {
         const expiredData = await notificationService.getExpiredNotifications();
 
         if (expiredData.length > 0) {
+            const title = "Product Expiry Warning";
+            const message = `There are ${expiredData.length} stock batches approaching expiry!`;
+
+            const staff = await prisma.user.findMany({
+                where: {
+                    roles: {hasSome: ['ADMIN', 'SUPERVISOR']}
+                }
+            });
+            
+            if (staff.length > 0) {
+                await prisma.notification.createMany({
+                    data: staff.map(user => ({
+                        userId: user.id,
+                        title: title,
+                        message: message,
+                    }))
+                });
+            }
+
             await pusher.trigger("inventory-channel","expiry-alert", {
-                message: `There is a ${expiredData.length} batch of products that are close to expiry!`,
+                title,
+                message,
                 data: expiredData
             });
-            console.log("Pusher: Expiry notification sent!");
+            console.log("Success: Notification saved to DB and sent via Pusher");
         } 
+    },
+
+    getUserInbox: async (userId: string) => {
+        return await prisma.notification.findMany({
+            where: {userId},
+            orderBy: {createdAt: "desc"}
+        })
+    },
+
+    markAsRead: async (id: string) => {
+        return await prisma.notification.update({
+            where:{id},
+            data: {isRead: true}
+        });
+    },
+
+    markAllRead: async (userId: string) => {
+        return await prisma.notification.updateMany({
+            where: {userId},
+            data: {isRead: true}
+        });
+    },
+
+    deleteNotification: async (id: string) => {
+        return await prisma.notification.delete({
+            where: {id}
+        });
     },
 
     updateSetting: async (days: number) => {

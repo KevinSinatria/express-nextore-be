@@ -38,6 +38,13 @@ router.put(
   memberController.updateMember,
 );
 
+router.patch(
+  "/:id/status",
+  authorizeRole(["ADMIN", "SUPERVISOR"]),
+  validate(memberSchema.updateMemberSchema),
+  memberController.updateMember,
+);
+
 router.delete(
   "/:id",
   authorizeRole(["ADMIN", "SUPERVISOR"]),

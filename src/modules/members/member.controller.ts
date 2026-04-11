@@ -112,6 +112,17 @@ const memberController = {
     }
   },
 
+  update: async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const id = req.params.id as string;
+      const {isActive} = req.body;
+      const result = await memberService.toggleStatus(id, isActive);
+      sendResponse(res, 200, `Member status updates to ${isActive ? "Active" : "Inactive"}`, result);
+    } catch(error) {
+      next(error);
+    }
+  },
+
   deleteMember: async (
     req: DeleteMemberRequest,
     res: Response,

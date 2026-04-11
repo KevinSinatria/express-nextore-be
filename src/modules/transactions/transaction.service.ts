@@ -180,7 +180,7 @@ const transactionService = {
       let totalProfit: number = 0;
       let totalNet: number = 0;
 
-      let member: Member | null = null;
+      let member: any = null;
       if (memberId) {
         try {
           member = await tx.member.findUniqueOrThrow({
@@ -188,6 +188,11 @@ const transactionService = {
               id: memberId,
             },
           });
+
+          if (member.isActive === false) {
+            throw new CustomError(400, `Member "${member.name}" is currently inactive and cannot be used for transactions.`);
+          }
+
         } catch (err) {
           if (
             err instanceof Prisma.PrismaClientKnownRequestError &&
@@ -537,11 +542,15 @@ const transactionService = {
         finalMemberId = data.memberId === "" ? null : data.memberId;
       }
 
-      let member: Member | null = null;
+      let member: any = null;
       if (finalMemberId) {
         member = await tx.member.findUnique({ where: { id: finalMemberId } });
         if (!member)
           throw new CustomError(404, `Member ${finalMemberId} not found.`);
+      }
+
+      if (member.isActive == false) {
+        throw new CustomError(400, `Member "${member.name}" is inactive.`);
       }
 
       const activeDiscount = await tx.discount.findMany({

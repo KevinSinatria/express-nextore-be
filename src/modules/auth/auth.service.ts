@@ -42,7 +42,27 @@ const authService = {
       },
     });
 
-    return;
+    const needsPos = ["CASHIER", "SUPREVISOR"];
+    let availablePos: any[] = [];
+
+    if(needsPos.includes(role)) {
+     availablePos = await prisma.pos.findMany({
+      select: {
+        id: true,
+        name: true,
+        location: true,
+        isActive: true,
+        activeUser: {
+          select: {name: true}
+        }
+      }
+    });
+    }
+
+    return {
+      selectedRole: role,
+      availablePos,
+    };
   },
 
   selectPos: async ({
@@ -108,14 +128,7 @@ const authService = {
       throw new CustomError(401, "Invalid username or password");
     }
 
-    const availablePos = await prisma.pos.findMany({
-      select: {
-        id: true,
-        name: true,
-        location: true,
-        isActive: true,
-      }
-    });
+    const availablePos: any[] = [];
 
     if (user.roles && user.roles.length > 0) {
       if (user.roles.length === 1) {
