@@ -68,11 +68,18 @@ const productService = {
         take: limit || 10,
         include: {
           category: true,
-          bundleComponents: {
+          asComponentIn: {
             include: {
-              component: true,
-            },
+              bundleProduct: {
+                select: {
+                  id: true,
+                  name: true,
+                  sku: true
+                }
+              }
+            }
           },
+          stockBatches: true
         },
       }),
       prisma.product.count({
@@ -96,11 +103,18 @@ const productService = {
         },
         include: {
           category: true,
-          bundleComponents: {
+          asComponentIn: {
             include: {
-              component: true,
-            },
+              bundleProduct: {
+                select: {
+                  id: true,
+                  name: true,
+                  sku: true
+                }
+              }
+            }
           },
+          stockBatches: true
         },
       });
 

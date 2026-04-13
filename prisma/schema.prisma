@@ -22,9 +22,9 @@ enum Role {
 
 model Pos {
   id           String        @id @default(cuid())
-  name         String
+  name         String        @unique
   location     String
-  deviceName   String
+  deviceName   String        @unique
   isActive     Boolean       @default(false)
   activeUserId String?       @unique
   activeUser   User?         @relation(fields: [activeUserId], references: [id])

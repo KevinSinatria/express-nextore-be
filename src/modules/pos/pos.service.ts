@@ -2,18 +2,32 @@ import prisma from "../../config/prisma.js";
 import {CustomError} from "../../utils/custom-error.js";
 import type z from "zod";
 import type posSchema from "./pos.schema.js";
+import { Prisma } from "../../generated/prisma/client.js";
 
 type CreatePosBody = z.infer<typeof posSchema.createPosSchema>["body"];
 type UpdatePosBody = z.infer<typeof posSchema.updatePosSchema>["body"];
 
 const posService = {
   createPos: async (data: CreatePosBody) => {
-    return await prisma.pos.create({
+    try {
+          return await prisma.pos.create({
       data: {
         ...data,
         isActive: false,
       },
     });
+    } catch (err) {
+      if (err instanceof Prisma.PrismaClientKnownRequestError && err.code == "P2002") {
+        const target = (err.meta?.target as string  []) || [];
+        if (target.includes("name")) {
+          throw new CustomError(400, "POS name already exists");
+        }
+        if (target.includes("deviceName")) {
+          throw new CustomError(400, "Device name already exists");
+        }
+      }
+      throw err;
+    }
   },
 
   getAllPos: async () => {
@@ -59,7 +73,8 @@ updatePos: async (id: string, data:UpdatePosBody) => {
   const existingPos = await prisma.pos.findUnique({ where: {id} });
   if (!existingPos) throw new CustomError(404, "POS terminal not found");
  
-    const updateData: any = {};
+    try {
+      const updateData: any = {};
       if (data.name !== undefined) updateData.name = data.name;
       if (data.location !== undefined) updateData.location = data.location;
       if (data.deviceName !== undefined) updateData.deviceName = data.deviceName;
@@ -70,6 +85,18 @@ updatePos: async (id: string, data:UpdatePosBody) => {
     });
 
     return updatePos;
+    } catch (err) {
+      if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2002") {
+        const target = (err.meta?.target as      string[]) || [];
+        if (target.includes("name")) {
+          throw new CustomError(400, "POS name already exists");
+        }
+        if (target.includes("deviceName")) {
+          throw new CustomError(400, "Device name already exists");
+        }
+      }
+      throw err;
+    }
   },
 
   deletePos: async (id: string) => {

@@ -8,6 +8,9 @@ CREATE TYPE "DiscountType" AS ENUM ('PERCENTAGE', 'FIXED_AMOUNT');
 CREATE TYPE "TransactionStatus" AS ENUM ('COMPLETED', 'PENDING', 'CANCELLED');
 
 -- CreateEnum
+CREATE TYPE "BatchStatus" AS ENUM ('ACTIVE', 'EXPIRED');
+
+-- CreateEnum
 CREATE TYPE "ShiftStatus" AS ENUM ('OPEN', 'CLOSED');
 
 -- CreateTable
@@ -123,6 +126,7 @@ CREATE TABLE "Member" (
     "id" TEXT NOT NULL,
     "name" TEXT NOT NULL,
     "phone" TEXT NOT NULL,
+    "isActive" BOOLEAN NOT NULL DEFAULT true,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "Member_pkey" PRIMARY KEY ("id")
@@ -143,6 +147,7 @@ CREATE TABLE "Transaction" (
     "change" DOUBLE PRECISION,
     "status" "TransactionStatus" NOT NULL DEFAULT 'PENDING',
     "userId" TEXT NOT NULL,
+    "posId" TEXT,
     "memberId" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
@@ -172,6 +177,7 @@ CREATE TABLE "Product" (
     "images" TEXT[] DEFAULT ARRAY[]::TEXT[],
     "hppAverage" DOUBLE PRECISION NOT NULL DEFAULT 0,
     "price" DOUBLE PRECISION NOT NULL,
+    "unit" VARCHAR(50) NOT NULL DEFAULT 'pcs',
     "isBundle" BOOLEAN NOT NULL DEFAULT false,
     "totalStock" INTEGER NOT NULL DEFAULT 0,
     "lowStockThreshold" INTEGER NOT NULL DEFAULT 10,
@@ -203,6 +209,7 @@ CREATE TABLE "StockBatch" (
     "purchasePrice" DOUBLE PRECISION NOT NULL,
     "expiryDate" TIMESTAMP(3),
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "status" "BatchStatus" NOT NULL DEFAULT 'ACTIVE',
 
     CONSTRAINT "StockBatch_pkey" PRIMARY KEY ("id")
 );
@@ -234,6 +241,27 @@ CREATE TABLE "AuditLog" (
 );
 
 -- CreateTable
+CREATE TABLE "settings" (
+    "id" TEXT NOT NULL DEFAULT 'global-setting',
+    "expiredReminderDays" INTEGER NOT NULL DEFAULT 7,
+    "updateAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "settings_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "notifications" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "title" TEXT NOT NULL,
+    "message" TEXT NOT NULL,
+    "isRead" BOOLEAN NOT NULL DEFAULT false,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "notifications_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
 CREATE TABLE "_DiscountToProduct" (
     "A" TEXT NOT NULL,
     "B" TEXT NOT NULL,
@@ -248,6 +276,12 @@ CREATE TABLE "_DiscountToTransaction" (
 
     CONSTRAINT "_DiscountToTransaction_AB_pkey" PRIMARY KEY ("A","B")
 );
+
+-- CreateIndex
+CREATE UNIQUE INDEX "pos_name_key" ON "pos"("name");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "pos_deviceName_key" ON "pos"("deviceName");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "pos_activeUserId_key" ON "pos"("activeUserId");
@@ -310,6 +344,9 @@ ALTER TABLE "account" ADD CONSTRAINT "account_userId_fkey" FOREIGN KEY ("userId"
 ALTER TABLE "Transaction" ADD CONSTRAINT "Transaction_userId_fkey" FOREIGN KEY ("userId") REFERENCES "user"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
+ALTER TABLE "Transaction" ADD CONSTRAINT "Transaction_posId_fkey" FOREIGN KEY ("posId") REFERENCES "pos"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
 ALTER TABLE "Transaction" ADD CONSTRAINT "Transaction_memberId_fkey" FOREIGN KEY ("memberId") REFERENCES "Member"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
@@ -335,6 +372,9 @@ ALTER TABLE "CashShift" ADD CONSTRAINT "CashShift_userId_fkey" FOREIGN KEY ("use
 
 -- AddForeignKey
 ALTER TABLE "AuditLog" ADD CONSTRAINT "AuditLog_userId_fkey" FOREIGN KEY ("userId") REFERENCES "user"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "notifications" ADD CONSTRAINT "notifications_userId_fkey" FOREIGN KEY ("userId") REFERENCES "user"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "_DiscountToProduct" ADD CONSTRAINT "_DiscountToProduct_A_fkey" FOREIGN KEY ("A") REFERENCES "Discount"("id") ON DELETE CASCADE ON UPDATE CASCADE;
