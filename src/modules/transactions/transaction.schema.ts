@@ -25,6 +25,7 @@ const createTransactionSchema = z.object({
         .enum(TransactionStatus)
         .optional()
         .default(TransactionStatus.PENDING),
+      cashReceived: z.number().optional(),
       items: z.array(
         z.object({
           productId: z.string(),
@@ -38,6 +39,14 @@ const createTransactionSchema = z.object({
           code: z.ZodIssueCode.custom,
           message: "customerName is required when status is PENDING",
           path: ["customerName"],
+        });
+      }
+
+      if (data.paymentMethod === "CASH" && !data.cashReceived) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "cashReceived is required when paymentMethod is CASH",
+          path: ["cashReceived"],
         });
       }
     }),
@@ -59,6 +68,7 @@ const updatePendingTransactionSchema = z.object({
       paymentMethod: z.string().optional(),
       memberId: z.string().optional(),
       customerName: z.string().optional(),
+      cashReceived: z.number().optional(),
       items: z
         .array(
           z.object({
@@ -75,6 +85,14 @@ const updatePendingTransactionSchema = z.object({
           code: z.ZodIssueCode.custom,
           message: "customerName is required when status is PENDING",
           path: ["customerName"],
+        });
+      }
+
+      if (data.paymentMethod === "CASH" && !data.cashReceived) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "cashReceived is required when paymentMethod is CASH",
+          path: ["cashReceived"],
         });
       }
     }),
