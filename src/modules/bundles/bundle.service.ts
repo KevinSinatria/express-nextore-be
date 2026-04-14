@@ -53,6 +53,9 @@ const bundleService = {
         where,
         skip,
         take: limit || 10,
+        orderBy: {
+          updatedAt: "desc",
+        },
         include: {
           category: true,
           bundleComponents: {
@@ -226,6 +229,7 @@ const bundleService = {
             description: productData.description,
           }),
           ...(newImageUrls && { images: newImageUrls }),
+          isBundle: true,
         };
 
         if (components) {
@@ -238,6 +242,11 @@ const bundleService = {
           if (existingComponents.length !== componentIds.length) {
             throw new CustomError(400, "One or more components are invalid.");
           }
+
+          updateData.hppAverage = components.reduce((acc, comp) => {
+            const ec = existingComponents.find(c => c.id === comp.componentId);
+            return acc + (ec?.hppAverage || 0) * comp.qty;
+          }, 0);
 
           await tx.bundleComponent.deleteMany({
             where: { bundleProductId: id },

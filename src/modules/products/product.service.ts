@@ -68,11 +68,18 @@ const productService = {
         take: limit || 10,
         include: {
           category: true,
-          bundleComponents: {
+          asComponentIn: {
             include: {
-              component: true,
-            },
+              bundleProduct: {
+                select: {
+                  id: true,
+                  name: true,
+                  sku: true
+                }
+              }
+            }
           },
+          stockBatches: true
         },
       }),
       prisma.product.count({
@@ -96,11 +103,18 @@ const productService = {
         },
         include: {
           category: true,
-          bundleComponents: {
+          asComponentIn: {
             include: {
-              component: true,
-            },
+              bundleProduct: {
+                select: {
+                  id: true,
+                  name: true,
+                  sku: true
+                }
+              }
+            }
           },
+          stockBatches: true
         },
       });
 
@@ -272,14 +286,38 @@ const productService = {
     }
   },
 
-  alertLowStock: async () => {
-    const products = await prisma.product.findMany({
-      where: {
-        totalStock: {
-          lt: prisma.product.fields.lowStockThreshold,
-        },
+  alertLowStock: async ({query}: {query: {search?: string}}) => {
+    const {search} = query;
+
+    const where: Prisma.ProductWhereInput = {
+      totalStock: {
+        lte: prisma.product.fields.lowStockThreshold,
       },
+      isBundle: false,
+    };
+
+    if (search) {
+      where.AND = [
+        {
+          OR: [
+            {name: {contains: search, mode: "insensitive"}},
+            {sku: {contains: search, mode: "insensitive"}},
+          ],
+        },
+      ];
+    }
+
+    const products = await prisma.product.findMany({
+      where,
+      include: {
+        category: true,
+        stockBatches: true,
+      },
+      orderBy: {
+        totalStock: "asc",
+      }
     });
+
     return products;
   },
 };

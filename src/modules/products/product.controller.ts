@@ -109,7 +109,8 @@ const productController = {
   },
   alertLowStock: async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const result = await productService.alertLowStock();
+      const query = req.query as {search?: string};
+      const result = await productService.alertLowStock({query});
       sendResponse(res, 200, "Low stock products fetched successfully", result);
     } catch (error) {
       next(error);
