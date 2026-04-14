@@ -42,7 +42,7 @@ const authController = {
   ) => {
     try {
       const userId = req.user!.id;
-      const {posId} = req.body;
+      const { posId } = req.body;
       const token = req.session!.token;
 
       const result = await authService.selectPos({
@@ -51,7 +51,7 @@ const authController = {
         token,
       });
       sendResponse(res, 200, "POS Terminal selected successfully", result);
-    }catch(error) {
+    } catch (error) {
       next(error);
     }
   },

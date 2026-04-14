@@ -164,7 +164,14 @@ const transactionService = {
     userId: string;
     posId?: string;
   }) => {
-    const { memberId, items, paymentMethod, customerName, status } = data;
+    const {
+      memberId,
+      items,
+      cashReceived,
+      paymentMethod,
+      customerName,
+      status,
+    } = data;
     const invoiceNumber = await generateInvoiceNumber();
 
     if (status === "PENDING" && (!customerName || customerName.trim() === "")) {
@@ -190,9 +197,11 @@ const transactionService = {
           });
 
           if (member.isActive === false) {
-            throw new CustomError(400, `Member "${member.name}" is currently inactive and cannot be used for transactions.`);
+            throw new CustomError(
+              400,
+              `Member "${member.name}" is currently inactive and cannot be used for transactions.`,
+            );
           }
-
         } catch (err) {
           if (
             err instanceof Prisma.PrismaClientKnownRequestError &&
@@ -374,6 +383,16 @@ const transactionService = {
       totalDiscount += transactionDiscountAmount;
       totalNet = totalGross - totalDiscount;
       totalProfit -= transactionDiscountAmount;
+      const totalHpp = transactionItems.reduce(
+        (acc, curr) => acc + curr.hppAtSale * curr.qty,
+        0,
+      );
+
+      const change = cashReceived ? cashReceived - totalNet : 0;
+
+      if (paymentMethod === "CASH" && change < 0) {
+        throw new CustomError(400, "Insufficient cash received.");
+      }
 
       const transaction = await tx.transaction.create({
         data: {
@@ -382,8 +401,11 @@ const transactionService = {
           totalDiscount,
           totalNet,
           totalProfit,
+          totalHpp,
           paymentMethod,
           status,
+          cashReceived: cashReceived ?? null,
+          change: change ?? null,
           customerName: customerName ?? null,
           userId,
           posId: posId ?? null,
@@ -650,6 +672,16 @@ const transactionService = {
       totalDiscount += transactionDiscountAmount;
       totalNet = totalGross - totalDiscount;
       totalProfit -= transactionDiscountAmount;
+      const totalHpp = transactionItems.reduce(
+        (acc, curr) => acc + curr.hppAtSale * curr.qty,
+        0,
+      );
+
+      const change = data.cashReceived ? data.cashReceived - totalNet : 0;
+
+      if (data.paymentMethod === "CASH" && change < 0) {
+        throw new CustomError(400, "Insufficient cash received.");
+      }
 
       return await tx.transaction.update({
         where: { id },
@@ -657,6 +689,7 @@ const transactionService = {
           totalGross,
           totalDiscount,
           totalNet,
+          totalHpp,
           totalProfit,
           paymentMethod: data.paymentMethod ?? transaction.paymentMethod,
           customerName:
@@ -667,6 +700,8 @@ const transactionService = {
           items: {
             create: transactionItems,
           },
+          change,
+          cashReceived: data.cashReceived ?? null,
           status: data.status ?? transaction.status,
         },
         include: { items: true },

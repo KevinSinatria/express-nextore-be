@@ -1,6 +1,9 @@
 import express from "express";
 import notificationController from "./notification.controller.js";
-import {isAuthenticated, authorizeRole} from "../../middlewares/auth.middleware.js";
+import {
+  isAuthenticated,
+  authorizeRole,
+} from "../../middlewares/auth.middleware.js";
 
 const notificationRoute = express.Router();
 
@@ -18,6 +21,10 @@ notificationRoute.patch("/inbox/:id/read", notificationController.markRead);
 
 notificationRoute.delete("/inbox/:id", notificationController.remove);
 
-notificationRoute.post("/setting", authorizeRole(["ADMIN"]), notificationController.setDays);
+notificationRoute.post(
+  "/setting",
+  authorizeRole(["ADMIN"]),
+  notificationController.setDays,
+);
 
 export default notificationRoute;
