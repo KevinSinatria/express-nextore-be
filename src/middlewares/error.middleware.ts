@@ -3,6 +3,7 @@ import type { NextFunction, Request, Response } from "express";
 import { ZodError } from "zod";
 import { CustomError } from "../utils/custom-error.js";
 import { MulterError } from "multer";
+import { APIError } from "better-auth";
 
 export const errorHandler = (
   err: Error,
@@ -28,6 +29,13 @@ export const errorHandler = (
         path: issue.path[issue.path.length - 1],
         message: issue.message,
       })),
+    });
+  }
+
+  if (err instanceof APIError && err.statusCode === 401) {
+    return res.status(401).json({
+      success: false,
+      message: err.body?.message,
     });
   }
 
