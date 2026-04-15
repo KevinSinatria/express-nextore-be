@@ -1278,7 +1278,7 @@ paths:
                         $ref: "#/components/schemas/Category"
         "404":
           $ref: "#/components/responses/NotFound"
-    put:
+    patch:
       tags:
         - Categories
       summary: "Perbarui kategori"
