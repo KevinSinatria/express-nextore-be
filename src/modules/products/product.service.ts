@@ -74,12 +74,12 @@ const productService = {
                 select: {
                   id: true,
                   name: true,
-                  sku: true,
-                },
-              },
-            },
+                  sku: true
+                }
+              }
+            }
           },
-          stockBatches: true,
+          stockBatches: true
         },
       }),
       prisma.product.count({
@@ -286,8 +286,8 @@ const productService = {
     }
   },
 
-  alertLowStock: async ({ query }: { query: { search?: string } }) => {
-    const { search } = query;
+  alertLowStock: async ({query}: {query: {search?: string}}) => {
+    const {search} = query;
 
     const where: Prisma.ProductWhereInput = {
       totalStock: {
@@ -300,8 +300,8 @@ const productService = {
       where.AND = [
         {
           OR: [
-            { name: { contains: search, mode: "insensitive" } },
-            { sku: { contains: search, mode: "insensitive" } },
+            {name: {contains: search, mode: "insensitive"}},
+            {sku: {contains: search, mode: "insensitive"}},
           ],
         },
       ];
@@ -316,6 +316,9 @@ const productService = {
       orderBy: {
         totalStock: "asc",
       },
+      orderBy: {
+        totalStock: "asc",
+      }
     });
 
     return products;
