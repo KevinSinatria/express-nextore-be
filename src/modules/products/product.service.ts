@@ -109,12 +109,12 @@ const productService = {
                 select: {
                   id: true,
                   name: true,
-                  sku: true
-                }
-              }
-            }
+                  sku: true,
+                },
+              },
+            },
           },
-          stockBatches: true
+          stockBatches: true,
         },
       });
 
@@ -312,6 +312,9 @@ const productService = {
       include: {
         category: true,
         stockBatches: true,
+      },
+      orderBy: {
+        totalStock: "asc",
       },
       orderBy: {
         totalStock: "asc",
