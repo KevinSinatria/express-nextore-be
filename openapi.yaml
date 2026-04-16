@@ -141,6 +141,11 @@ components:
           type: integer
           description: "Total jumlah stok yang tersedia dari semua batch."
           example: 50
+        unit:
+          type: string
+          description: "Satuan unit produk (misal: pcs, kg, botol)."
+          example: "pcs"
+          default: "pcs"
         lowStockThreshold:
           type: integer
           description: "Ambang batas stok rendah untuk peringatan."
@@ -987,6 +992,11 @@ paths:
                   type: number
                   description: "Ambang batas stok rendah untuk peringatan."
                   example: 10
+                unit:
+                  type: string
+                  description: "Satuan produk."
+                  example: "pcs"
+                  default: "pcs"
                 categoryId:
                   type: string
                   format: cuid
@@ -1110,6 +1120,10 @@ paths:
                 lowStockThreshold:
                   type: number
                   example: 15
+                unit:
+                  type: string
+                  example: "pcs"
+                  default: "pcs"
                 categoryId:
                   type: string
                   format: cuid
@@ -2393,12 +2407,6 @@ paths:
           schema:
             type: string
         - in: query
-          name: daysThreshold
-          schema:
-            type: string
-            default: "30"
-          description: "Ambang batas jumlah hari peringatan dari hari ini"
-        - in: query
           name: format
           schema:
             type: string
@@ -2974,3 +2982,170 @@ paths:
                         type: array
                         items:
                           $ref: "#/components/schemas/User"
+
+  /price-lists:
+    get:
+      tags:
+        - Price Lists
+      summary: "Ambil daftar Price Lists"
+      operationId: getPriceLists
+      description: "Mendapatkan daftar daftar harga dengan opsi pagination dan pencarian."
+      security:
+        - cookieAuth: []
+      parameters:
+        - in: query
+          name: page
+          schema:
+            type: string
+        - in: query
+          name: limit
+          schema:
+            type: string
+        - in: query
+          name: name
+          schema:
+            type: string
+      responses:
+        "200":
+          description: "Berhasil"
+    post:
+      tags:
+        - Price Lists
+      summary: "Buat Price List Baru"
+      operationId: createPriceList
+      description: "Membuat daftar harga baru berserta itemnya."
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                description:
+                  type: string
+                isActive:
+                  type: boolean
+                items:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      productId:
+                        type: string
+                      newPrice:
+                        type: number
+      responses:
+        "201":
+          description: "Berhasil"
+
+  /price-lists/default:
+    put:
+      tags:
+        - Price Lists
+      summary: "Nonaktifkan Semua Price List"
+      operationId: deactivateAllPriceLists
+      description: "Deaktivasi semua daftar harga. Produk kembali ke harga dasar aslinya."
+      security:
+        - cookieAuth: []
+      responses:
+        "200":
+          description: "Berhasil"
+
+  /price-lists/{id}/activate:
+    put:
+      tags:
+        - Price Lists
+      summary: "Aktifkan Price List"
+      operationId: activatePriceList
+      description: "Mengaktifkan spesifik daftar harga dan menonaktifkan harga yang lain."
+      security:
+        - cookieAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: "Berhasil"
+
+  /price-lists/{id}:
+
+    get:
+      tags:
+        - Price Lists
+      summary: "Ambil detail Price List"
+      operationId: getPriceListById
+      description: "Mendapatkan daftar harga berdasarkan ID beserta semua produknya."
+      security:
+        - cookieAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: "Berhasil"
+    put:
+      tags:
+        - Price Lists
+      summary: "Perbarui Price List"
+      operationId: updatePriceList
+      description: "Sinkronisasi detail daftar harga dan menggantikan item harganya secara utuh."
+      security:
+        - cookieAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                description:
+                  type: string
+                isActive:
+                  type: boolean
+                items:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      productId:
+                        type: string
+                      newPrice:
+                        type: number
+      responses:
+        "200":
+          description: "Berhasil"
+    delete:
+      tags:
+        - Price Lists
+      summary: "Hapus Price List"
+      operationId: deletePriceList
+      description: "Menghapus target Price List. Cascade."
+      security:
+        - cookieAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: "Berhasil"

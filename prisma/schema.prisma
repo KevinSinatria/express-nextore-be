@@ -221,7 +221,8 @@ model Product {
   bundleComponents  BundleComponent[] @relation("BundleParent")
 
   // Relasi: Jika produk ini BAGIAN dari paket lain (opsional)
-  asComponentIn BundleComponent[] @relation("ComponentChild")
+  asComponentIn  BundleComponent[] @relation("ComponentChild")
+  priceListItems PriceListItem[]
 }
 
 model BundleComponent {
@@ -303,4 +304,27 @@ model Notification {
   createdAt DateTime @default(now())
 
   @@map("notifications")
+}
+
+model PriceList {
+  id          String          @id @default(cuid())
+  name        String
+  description String?
+  isActive    Boolean         @default(false)
+  items       PriceListItem[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model PriceListItem {
+  id          String    @id @default(cuid())
+  priceListId String
+  priceList   PriceList @relation(fields: [priceListId], references: [id], onDelete: Cascade)
+  productId   String
+  product     Product   @relation(fields: [productId], references: [id])
+
+  newPrice Float
+
+  @@unique([priceListId, productId])
 }

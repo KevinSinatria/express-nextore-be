@@ -87,6 +87,22 @@ const productService = {
       }),
     ]);
 
+    // Active PriceList Substitution
+    const activePriceList = await prisma.priceList.findFirst({
+      where: { isActive: true },
+      include: { items: true },
+    });
+    if (activePriceList && products.length > 0) {
+      const overrideMap = new Map(
+        activePriceList.items.map((i) => [i.productId, i.newPrice]),
+      );
+      products.forEach((p) => {
+        if (overrideMap.has(p.id)) {
+          p.price = overrideMap.get(p.id)!;
+        }
+      });
+    }
+
     const meta = createPaginationMeta(count, page, limit);
     return { data: products, meta };
   },
@@ -117,6 +133,22 @@ const productService = {
           stockBatches: true,
         },
       });
+
+      // Active PriceList Substitution
+      if (product) {
+        const activePriceList = await prisma.priceList.findFirst({
+          where: { isActive: true },
+          include: { items: true },
+        });
+        if (activePriceList) {
+          const matchingItem = activePriceList.items.find(
+            (i) => i.productId === product.id,
+          );
+          if (matchingItem) {
+            product.price = matchingItem.newPrice;
+          }
+        }
+      }
 
       return product;
     } catch (err) {
