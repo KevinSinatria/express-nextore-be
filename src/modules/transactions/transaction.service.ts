@@ -237,6 +237,15 @@ const transactionService = {
         });
       };
 
+      // Active PriceList Substitution
+      const activePriceList = await tx.priceList.findFirst({
+        where: { isActive: true },
+        include: { items: true },
+      });
+      const priceOverrideMap = new Map(
+        activePriceList?.items.map(i => [i.productId, i.newPrice]) || []
+      );
+
       const transactionItems: {
         productId: string;
         qty: number;
@@ -289,6 +298,11 @@ const transactionService = {
           product.discount = productWithDiscounts?.discount || [];
           product.bundleComponents =
             productWithDiscounts?.bundleComponents || [];
+            
+          // Apply override price if it exists for this item
+          if (priceOverrideMap.has(product.id)) {
+            product.price = priceOverrideMap.get(product.id)!;
+          }
         } catch (err) {
           throw err;
         }

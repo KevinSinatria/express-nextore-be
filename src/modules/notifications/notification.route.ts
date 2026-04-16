@@ -11,7 +11,10 @@ notificationRoute.use(isAuthenticated);
 
 notificationRoute.get("/expired", notificationController.getExpiredList);
 
-notificationRoute.post("/trigger-test", notificationController.triggerExpiryCheck);
+notificationRoute.post(
+  "/trigger-test",
+  notificationController.triggerExpiryCheck,
+);
 
 notificationRoute.get("/inbox", notificationController.getInbox);
 
@@ -26,5 +29,7 @@ notificationRoute.post(
   authorizeRole(["ADMIN"]),
   notificationController.setDays,
 );
+
+notificationRoute.get("/setting", notificationController.getDays);
 
 export default notificationRoute;

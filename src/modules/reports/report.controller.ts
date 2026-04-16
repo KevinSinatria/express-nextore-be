@@ -45,7 +45,11 @@ const reportController = {
         res.status(200).send(csvString);
         return;
       } else if (req.query.format === "excel") {
-        const excelBuffer = await convertToExcel(result.data!);
+        const excelBuffer = await convertToExcel(result.data!, {
+          title: "Sales Audit Trail Report",
+          subtitles: (result as any).subtitles,
+          currencyKeys: ["totalGross", "totalNet", "totalProfit", "totalHpp"]
+        });
         res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
         res.setHeader("Content-Disposition", 'attachment; filename="sales_audit_trail.xlsx"');
         res.status(200).send(excelBuffer);
@@ -73,7 +77,9 @@ const reportController = {
         res.status(200).send(csvString);
         return;
       } else if (req.query.format === "excel") {
-        const excelBuffer = await convertToExcel(result.data!);
+        const excelBuffer = await convertToExcel(result.data!, {
+          title: "Inventory Expiry Reminder Report"
+        });
         res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
         res.setHeader("Content-Disposition", 'attachment; filename="inventory_expiry_alert.xlsx"');
         res.status(200).send(excelBuffer);
