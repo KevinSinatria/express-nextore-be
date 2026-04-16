@@ -3,6 +3,9 @@ import type z from "zod";
 import authSchema from "./auth.schema.js";
 import authService from "./auth.service.js";
 import sendResponse from "../../utils/sendResponse.js";
+import cashShiftService from "../cashshift/cashshift.service.js";
+import prisma from "../../config/prisma.js";
+import { CustomError } from "../../utils/custom-error.js";
 
 type SelectRoleRequest = Request<
   unknown,
@@ -42,15 +45,24 @@ const authController = {
   ) => {
     try {
       const userId = req.user!.id;
-      const { posId } = req.body;
+      const { posId, startingCash } = req.body as {posId: string, startingCash?: number};
       const token = req.session!.token;
+
+      if (startingCash == undefined || startingCash === null) {
+        throw new CustomError(400, "Starting cash must be filled in");
+      }
 
       const result = await authService.selectPos({
         posId,
         userId,
         token,
       });
-      sendResponse(res, 200, "POS Terminal selected successfully", result);
+
+      await cashShiftService.openShift(userId, startingCash || 0);
+
+      const successMessage = `POS Terminal selected successfully with starting cash Rp${startingCash.toLocaleString()}`;
+
+      sendResponse(res, 200, successMessage, result);
     } catch (error) {
       next(error);
     }
@@ -80,11 +92,32 @@ const authController = {
 
   logout: async (req: Request, res: Response, next: NextFunction) => {
     try {
+      const userId = req.user!.id;
+      const {actualCash} = req.body;
+
+      const shiftResult = await cashShiftService.closeShift(userId, Number(actualCash) || 0);
+
+      let customMessage = "Logout successfuly";
+      
+      if(shiftResult) {
+       const expectedCash = shiftResult.expectedCash ?? 0;
+       const diff = shiftResult.difference ?? 0;
+       const totalSales = expectedCash - shiftResult.startingCash;
+
+        if (diff > 0) {
+          customMessage = `Logout successful. There is an excess of Rp${diff.toLocaleString()} from the total sales of Rp${totalSales.toLocaleString()}.`;
+        } else if (diff < 0) {
+          customMessage = `Logout successful. There is a shortage of Rp${Math.abs(diff).toLocaleString()} from the total sales of Rp${totalSales.toLocaleString()}.`;
+        } else {
+          customMessage = `Logout successful. Physical cash corresponds to total sales of Rp${totalSales.toLocaleString()}.`;
+        }
+      }
+
       await authService.logout({
         headers: req.headers,
         userId: req.user!.id,
       });
-      sendResponse(res, 200, "Logout successfully", null);
+      sendResponse(res, 200, customMessage, shiftResult);
     } catch (error) {
       next(error);
     }

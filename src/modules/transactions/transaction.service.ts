@@ -174,6 +174,17 @@ const transactionService = {
     } = data;
     const invoiceNumber = await generateInvoiceNumber();
 
+    const result = await prisma.$transaction(async (tx) => {
+
+      const activeShift = await tx.cashShift.findFirst({
+        where: {userId, status: "OPEN"},
+      });
+
+      if (!activeShift) {
+        throw new CustomError(404, "Active shift not found. you has been open a shift");
+      }
+    })
+
     if (status === "PENDING" && (!customerName || customerName.trim() === "")) {
       throw new CustomError(
         400,
@@ -416,6 +427,19 @@ const transactionService = {
         },
       });
 
+      await tx.auditLog.create ({
+        data: {
+          userId,
+          action: "CREATE_TARNSACTION",
+          details: {
+            invoiceNumber: transaction.invoiceNumber,
+            totalNet: transaction.totalNet,
+            patmentMethod: transaction.paymentMethod,
+            status: transaction.status,
+          },
+        },
+      });
+
       return transaction;
     });
 
@@ -424,8 +448,10 @@ const transactionService = {
 
   deleteTransaction: async ({
     id,
+    userIdAsli,
   }: {
     id: deleteTransactionParams["params"]["id"];
+    userIdAsli: string;
   }) => {
     try {
       return await prisma.$transaction(async (tx) => {
@@ -434,6 +460,8 @@ const transactionService = {
             id,
           },
           select: {
+            invoiceNumber: true,
+            status: true,
             items: {
               include: {
                 product: {
@@ -443,7 +471,6 @@ const transactionService = {
                 },
               },
             },
-            status: true,
           },
         });
 
@@ -488,7 +515,7 @@ const transactionService = {
           }
         }
 
-        await tx.transaction.update({
+        const updatedTransaction = await tx.transaction.update({
           where: {
             id,
           },
@@ -496,6 +523,20 @@ const transactionService = {
             status: "CANCELLED",
           },
         });
+
+        await tx.auditLog.create ({
+          data: {
+            userId: userIdAsli,
+            action: "CANCLE_TRNSACTION",
+            details: {
+              transactionId: id,
+              invoiceNumber: transaction.invoiceNumber,
+              reason: "User requestde cancelation",
+            },
+          },
+        });
+
+        return updatedTransaction;
       });
     } catch (err) {
       if (err instanceof Prisma.PrismaClientKnownRequestError) {
@@ -510,9 +551,11 @@ const transactionService = {
   updatePendingTransaction: async ({
     id,
     data,
+    userIdAsli,
   }: {
     id: updatePendingTransactionParams["params"]["id"];
     data: updatePendingTransactionParams["body"];
+    userIdAsli: string;
   }) => {
     return await prisma.$transaction(async (tx) => {
       const transaction = await tx.transaction.findUnique({
@@ -530,6 +573,9 @@ const transactionService = {
 
       if (!transaction)
         throw new CustomError(404, `Transaction ${id} not found.`);
+
+      const existingTransaction = transaction;
+
       if (transaction.status !== "PENDING") {
         throw new CustomError(400, "Only PENDING transactions can be updated.");
       }
@@ -683,7 +729,7 @@ const transactionService = {
         throw new CustomError(400, "Insufficient cash received.");
       }
 
-      return await tx.transaction.update({
+      const updated = await tx.transaction.update({
         where: { id },
         data: {
           totalGross,
@@ -706,6 +752,20 @@ const transactionService = {
         },
         include: { items: true },
       });
+
+      await tx.auditLog.create({
+        data: {
+          userId: userIdAsli,
+          action: "UPDATE_PENDING_TRANSACTION",
+          details: {
+            transactionId: id,
+            invoiceNumber: existingTransaction.invoiceNumber,
+            newStatus: data.status,
+          },
+        },
+      });
+
+      return updated;
     });
   },
 };

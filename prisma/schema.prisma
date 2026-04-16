@@ -164,6 +164,8 @@ model Transaction {
   cashReceived  Float?
   change        Float?
   status        TransactionStatus @default(PENDING)
+  cashShiftId   String?
+  cashShift     CashShift?        @relation(fields: [cashShiftId], references: [id])
 
   userId   String
   user     User              @relation(fields: [userId], references: [id])
@@ -259,16 +261,23 @@ enum BatchStatus {
 }
 
 model CashShift {
-  id           String      @id @default(cuid())
-  userId       String
-  user         User        @relation(fields: [userId], references: [id])
-  startTime    DateTime    @default(now())
-  endTime      DateTime?
-  startingCash Float
-  expectedCash Float?
-  actualCash   Float?
-  difference   Float?
-  status       ShiftStatus @default(OPEN)
+  id             String        @id @default(cuid())
+  userId         String
+  user           User          @relation(fields: [userId], references: [id])
+  startTime      DateTime      @default(now())
+  endTime        DateTime?
+  startingCash   Float
+  expectedCash   Float?
+  actualCash     Float?
+  difference     Float?
+  transactions   Transaction[]
+  status         ShiftStatus   @default(OPEN)
+  isIssues       Boolean       @default(false)
+  additionalCash Float         @default(0)
+  notes          String?
+  reportStatus   String        @default("PENDING")
+  verifiedBy     String?
+  verifiedAt     DateTime?
 }
 
 model AuditLog {

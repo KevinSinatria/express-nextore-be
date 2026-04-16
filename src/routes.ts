@@ -11,6 +11,7 @@ import bundleRoute from "./modules/bundles/bundle.route.js";
 import stockBatchRoute from "./modules/stock-batches/stock-batch.route.js";
 import reportRoute from "./modules/reports/report.route.js";
 import notificationRoute from "./modules/notifications/notification.route.js";
+import cashShiftRoute from "./modules/cashshift/cashshift.routes.js";
 
 const routes = express.Router();
 
@@ -26,5 +27,6 @@ routes.use("/bundles", bundleRoute);
 routes.use("/stock-batches", stockBatchRoute);
 routes.use("/reports", reportRoute);
 routes.use("/notifications", notificationRoute);
+routes.use("/cashshift", cashShiftRoute);
 
 export default routes;

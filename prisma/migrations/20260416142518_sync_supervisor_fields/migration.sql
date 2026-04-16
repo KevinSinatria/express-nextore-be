@@ -1,0 +1,7 @@
+-- AlterTable
+ALTER TABLE "CashShift" ADD COLUMN     "additionalCash" DOUBLE PRECISION NOT NULL DEFAULT 0,
+ADD COLUMN     "isIssues" BOOLEAN NOT NULL DEFAULT false,
+ADD COLUMN     "notes" TEXT,
+ADD COLUMN     "reportStatus" TEXT NOT NULL DEFAULT 'PENDING',
+ADD COLUMN     "verifiedAt" TIMESTAMP(3),
+ADD COLUMN     "verifiedBy" TEXT;

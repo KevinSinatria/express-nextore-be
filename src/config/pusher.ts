@@ -8,3 +8,10 @@ export const pusher = new Pusher({
     cluster: env("PUSHER_CLUSTER"),
     useTLS: true,
 });
+
+export const sendRealtimeLog = (eventName: string, data: any ) => {
+    pusher.trigger("cashier-monitoring", eventName, {
+        ...data,
+        time: new Date(),
+    });
+};
