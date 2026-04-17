@@ -26,7 +26,6 @@ const getInventoryExpirySchema = z.object({
   query: z.object({
     page: z.string().optional().default("1"),
     limit: z.string().optional().default("10"),
-    daysThreshold: z.string().optional().default("30"),
     format: z.enum(["json", "csv", "excel", "pdf"]).optional().default("json"),
   }),
 });

@@ -1,15 +1,28 @@
 import prisma from "../../config/prisma.js";
 import { Prisma } from "../../generated/prisma/client.js";
-import { createPaginationMeta, getPaginationParams } from "../../utils/pagination.js";
+import {
+  createPaginationMeta,
+  getPaginationParams,
+} from "../../utils/pagination.js";
 import type z from "zod";
 import type reportSchema from "./report.schema.js";
 
-type getSalesAnalyticsParams = z.infer<typeof reportSchema.getSalesAnalyticsSchema>;
-type getSalesAuditTrailParams = z.infer<typeof reportSchema.getSalesAuditTrailSchema>;
-type getInventoryExpiryParams = z.infer<typeof reportSchema.getInventoryExpirySchema>;
+type getSalesAnalyticsParams = z.infer<
+  typeof reportSchema.getSalesAnalyticsSchema
+>;
+type getSalesAuditTrailParams = z.infer<
+  typeof reportSchema.getSalesAuditTrailSchema
+>;
+type getInventoryExpiryParams = z.infer<
+  typeof reportSchema.getInventoryExpirySchema
+>;
 
 const reportService = {
-  getSalesAnalytics: async ({ query }: { query: getSalesAnalyticsParams["query"] }) => {
+  getSalesAnalytics: async ({
+    query,
+  }: {
+    query: getSalesAnalyticsParams["query"];
+  }) => {
     const { startDate, endDate, userId, posId } = query;
 
     const where: Prisma.TransactionWhereInput = {
@@ -55,7 +68,11 @@ const reportService = {
     };
   },
 
-  getSalesAuditTrail: async ({ query }: { query: getSalesAuditTrailParams["query"] }) => {
+  getSalesAuditTrail: async ({
+    query,
+  }: {
+    query: getSalesAuditTrailParams["query"];
+  }) => {
     const { page, limit, skip } = getPaginationParams({
       page: parseInt(query.page || "1"),
       limit: parseInt(query.limit || "10"),
@@ -93,35 +110,76 @@ const reportService = {
       prisma.transaction.count({ where }),
     ]);
 
-    const mappedData = (data as any[]).map(tx => ({
-      id: tx.id,
-      invoiceNumber: tx.invoiceNumber,
-      timestamp: tx.createdAt,
-      cashierId: tx.userId,
-      cashierName: tx.user?.name || "Unknown",
-      posTerminalId: tx.posId,
-      posTerminalName: tx.pos?.name || "N/A",
-      totalGross: tx.totalGross,
-      totalNet: tx.totalNet,
-      totalProfit: tx.totalProfit,
-      totalHpp: tx.totalHpp,
-    }));
+    const mappedData = (data as any[]).map((tx, index) => {
+      const obj: any = {};
+      if (isExport) {
+        obj.no = (offset !== undefined ? offset : 0) + index + 1;
+      } else {
+        obj.id = tx.id;
+      }
+
+      obj.invoiceNumber = tx.invoiceNumber;
+      obj.timestamp = new Date(tx.createdAt).toLocaleDateString("id-ID", {
+        year: "numeric",
+        month: "numeric",
+        day: "numeric",
+        hour: "numeric",
+        minute: "numeric",
+        second: "numeric",
+      });
+
+      if (!isExport) {
+        obj.cashierId = tx.userId;
+        obj.posTerminalId = tx.posId;
+      }
+
+      if (!userId || !isExport) obj.cashierName = tx.user?.name || "Unknown";
+      if (!posId || !isExport) obj.posTerminalName = tx.pos?.name || "N/A";
+
+      obj.totalGross = tx.totalGross;
+      obj.totalNet = tx.totalNet;
+      obj.totalProfit = tx.totalProfit;
+      obj.totalHpp = tx.totalHpp;
+
+      return obj;
+    });
 
     if (isExport) {
-        return { data: mappedData, meta: null };
+      const subtitles: string[] = [];
+      if (startDate || endDate)
+        subtitles.push(
+          `Periode: ${startDate ? new Date(startDate).toLocaleDateString("id-ID") : "Awal"} - ${endDate ? new Date(endDate).toLocaleDateString("id-ID") : "Akhir"}`,
+        );
+      if (userId && data.length > 0)
+        subtitles.push(`Kasir: ${data[0]?.user?.name || "Unknown"}`);
+      if (posId && data.length > 0)
+        subtitles.push(`Terminal POS: ${data[0]?.pos?.name || "N/A"}`);
+      return { data: mappedData, subtitles, meta: null };
     }
 
-    const meta = createPaginationMeta(count, parseInt(query.page || "1"), limit);
+    const meta = createPaginationMeta(
+      count,
+      parseInt(query.page || "1"),
+      limit,
+    );
     return { data: mappedData, meta };
   },
 
-  getInventoryExpiry: async ({ query }: { query: getInventoryExpiryParams["query"] }) => {
+  getInventoryExpiry: async ({
+    query,
+  }: {
+    query: getInventoryExpiryParams["query"];
+  }) => {
     const { page, limit, skip } = getPaginationParams({
       page: parseInt(query.page || "1"),
       limit: parseInt(query.limit || "10"),
     });
 
-    const daysThreshold = parseInt(query.daysThreshold || "30");
+    const setting = await prisma.setting.findUnique({
+      where: { id: "global-setting" },
+    });
+    const daysThreshold = setting?.expiredReminderDays ?? 30;
+
     const thresholdDate = new Date();
     thresholdDate.setDate(thresholdDate.getDate() + daysThreshold);
 
@@ -150,7 +208,7 @@ const reportService = {
       prisma.stockBatch.count({ where }),
     ]);
 
-    const mappedData = (data as any[]).map(batch => ({
+    const mappedData = (data as any[]).map((batch) => ({
       batchId: batch.id,
       batchNumber: batch.batchNumber,
       productName: batch.product.name,
@@ -160,10 +218,14 @@ const reportService = {
     }));
 
     if (isExport) {
-        return { data: mappedData, meta: null };
+      return { data: mappedData, meta: null };
     }
 
-    const meta = createPaginationMeta(count, parseInt(query.page || "1"), limit);
+    const meta = createPaginationMeta(
+      count,
+      parseInt(query.page || "1"),
+      limit,
+    );
     return { data: mappedData, meta };
   },
 };

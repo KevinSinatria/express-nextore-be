@@ -32,6 +32,13 @@ productRoute.get(
   productController.getProductById,
 );
 
+productRoute.get(
+  "/:id/price-histories",
+  authorizeRole(["ADMIN"]),
+  validate(productSchema.getProductByIdSchema),
+  productController.getProductPriceHistories,
+);
+
 productRoute.post(
   "/",
   authorizeRole(["ADMIN"]),
