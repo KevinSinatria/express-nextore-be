@@ -15,7 +15,7 @@ const createPriceListSchema = z.object({
 
 const updatePriceListSchema = z.object({
   params: z.object({
-    id: z.string().cuid({ message: "Invalid ID format." }),
+    id: z.string({ message: "Invalid ID format." }),
   }),
   body: z.object({
     name: z.string().min(1, "Name is required").optional(),

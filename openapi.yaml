@@ -135,7 +135,7 @@ components:
           example: 15000
         price:
           type: number
-          description: "Harga jual produk."
+          description: "Harga jual produk. Nilai ini bersifat dinamis dan dapat berubah sesuai dengan daftar harga (Price List) yang sedang aktif."
           example: 25000
         totalStock:
           type: integer
@@ -171,6 +171,23 @@ components:
           type: string
           format: date-time
           description: "Waktu produk terakhir diperbarui."
+        category:
+          $ref: "#/components/schemas/Category"
+        stockBatches:
+          type: array
+          items:
+            $ref: "#/components/schemas/StockBatch"
+        asComponentIn:
+          type: array
+          items:
+            type: object
+            properties:
+              bundleProduct:
+                type: object
+                properties:
+                  id: { type: string, format: cuid }
+                  name: { type: string }
+                  sku: { type: string }
 
     Category:
       type: object
@@ -554,6 +571,11 @@ components:
           type: string
           format: date-time
           description: "Waktu batch stok ditambahkan."
+        status:
+          type: string
+          enum: [ACTIVE, EXPIRED]
+          description: "Status aktifitas batch stok."
+          example: "ACTIVE"
 
     Bundle:
       allOf:
@@ -688,6 +710,33 @@ components:
         createdAt:
           type: string
           format: date-time
+
+    ProductPriceHistory:
+      type: object
+      required: [id, productId, oldPrice, newPrice, changedAt, userId]
+      properties:
+        id:
+          type: string
+          format: cuid
+        productId:
+          type: string
+          format: cuid
+        oldPrice:
+          type: number
+        newPrice:
+          type: number
+        changedAt:
+          type: string
+          format: date-time
+        userId:
+          type: string
+          format: cuid
+        user:
+          type: object
+          properties:
+            id: { type: string, format: cuid }
+            name: { type: string }
+            email: { type: string, format: email, nullable: true }
 
   responses:
     BadRequest:
@@ -915,7 +964,7 @@ paths:
         - Products
       summary: "Ambil semua produk"
       operationId: getAllProducts
-      description: "Mengambil daftar produk dengan dukungan pencarian, pemfilteran kategori, dan paginasi."
+      description: "Mengambil daftar produk dengan dukungan pencarian, pemfilteran kategori, dan paginasi. Harga produk yang dikembalikan akan disesuaikan secara otomatis jika terdapat Daftar Harga (Price List) yang sedang aktif."
       parameters:
         - in: query
           name: limit
@@ -1056,7 +1105,7 @@ paths:
         - Products
       summary: "Ambil detail produk"
       operationId: getProductById
-      description: "Mendapatkan informasi lengkap mengenai sebuah produk berdasarkan ID uniknya."
+      description: "Mendapatkan informasi lengkap mengenai sebuah produk berdasarkan ID uniknya. Harga akan disesuaikan jika terdapat Daftar Harga (Price List) yang sedang aktif."
       parameters:
         - in: path
           name: id
@@ -1175,6 +1224,42 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/BaseResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /products/{id}/price-histories:
+    get:
+      tags:
+        - Products
+      summary: "Ambil riwayat harga produk"
+      operationId: getProductPriceHistories
+      description: "Mengambil daftar riwayat perubahan harga produk yang dicatat oleh sistem. Hanya dapat diakses oleh Admin."
+      security:
+        - cookieAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: cuid
+          description: "ID unik produk (format CUID)."
+      responses:
+        "200":
+          description: "Riwayat harga berhasil diambil."
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/BaseResponse"
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/ProductPriceHistory"
         "401":
           $ref: "#/components/responses/Unauthorized"
         "404":

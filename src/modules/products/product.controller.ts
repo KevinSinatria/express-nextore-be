@@ -83,10 +83,12 @@ const productController = {
     next: NextFunction,
   ) => {
     try {
+      const user = req.user;
       const result = await productService.updateProduct({
         id: req.params.id,
         data: req.body,
         files: req.files as Express.Multer.File[] | undefined,
+        userId: user?.id,
       });
       sendResponse(res, 200, "Product updated successfully", result);
     } catch (error) {
@@ -109,9 +111,29 @@ const productController = {
   },
   alertLowStock: async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const query = req.query as {search?: string};
-      const result = await productService.alertLowStock({query});
+      const query = req.query as { search?: string };
+      const result = await productService.alertLowStock({ query });
       sendResponse(res, 200, "Low stock products fetched successfully", result);
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  getProductPriceHistories: async (
+    req: GetProductByIdRequest,
+    res: Response,
+    next: NextFunction,
+  ) => {
+    try {
+      const result = await productService.getProductPriceHistories({
+        id: req.params.id,
+      });
+      sendResponse(
+        res,
+        200,
+        "Product price histories fetched successfully",
+        result,
+      );
     } catch (error) {
       next(error);
     }

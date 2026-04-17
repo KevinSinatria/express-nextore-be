@@ -218,10 +218,12 @@ const productService = {
     id,
     data,
     files,
+    userId,
   }: {
     id: UpdateProductParams["params"]["id"];
     data: UpdateProductParams["body"];
     files: Express.Multer.File[] | undefined;
+    userId: string;
   }) => {
     const { name, sku, price, lowStockThreshold, categoryId, unit } = data;
     let newImageUrls: string[] | null = null;
@@ -240,12 +242,12 @@ const productService = {
         throw new CustomError(404, `Category with ID ${categoryId} not found.`);
       }
 
-      const existingProduct = await prisma.product.findUniqueOrThrow({
+      const existingProduct = await prisma.product.findUnique({
         where: {
           id,
         },
       });
-      const oldImageUrls = existingProduct.images;
+      const oldImageUrls = existingProduct?.images;
 
       if (files && files.length > 0) {
         newImageUrls = await Promise.all(
@@ -268,8 +270,18 @@ const productService = {
         },
       });
 
-      if (newImageUrls && oldImageUrls.length > 0) {
-        Promise.all(oldImageUrls.map((url) => deleteImage(url))).catch(
+      await prisma.productPriceHistory.create({
+        data: {
+          productId: id,
+          oldPrice: existingProduct?.price ?? 0,
+          newPrice: Number(price),
+          userId: userId,
+          changedAt: new Date(),
+        },
+      });
+
+      if (newImageUrls && oldImageUrls!.length > 0) {
+        Promise.all(oldImageUrls!.map((url) => deleteImage(url))).catch(
           console.error,
         );
       }
@@ -351,6 +363,41 @@ const productService = {
     });
 
     return products;
+  },
+
+  getProductPriceHistories: async ({
+    id,
+  }: {
+    id: GetProductByIdParams["params"]["id"];
+  }) => {
+    try {
+      const productPriceHistories = await prisma.productPriceHistory.findMany({
+        where: {
+          productId: id,
+        },
+        include: {
+          user: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+            },
+          },
+        },
+        orderBy: {
+          changedAt: "desc",
+        },
+      });
+
+      return productPriceHistories;
+    } catch (err) {
+      if (err instanceof Prisma.PrismaClientKnownRequestError) {
+        if (err.code === "P2025") {
+          throw new CustomError(404, `Product with ID ${id} not found.`);
+        }
+      }
+      throw err;
+    }
   },
 };
 
