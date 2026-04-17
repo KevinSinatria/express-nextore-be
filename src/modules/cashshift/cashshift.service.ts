@@ -26,7 +26,7 @@ const cashShiftService = {
             },
             data: {
                 activeShiftId: newShift.id
-            }as any
+            }
         });
         return newShift;
     },
@@ -81,7 +81,7 @@ const cashShiftService = {
             },
             data: {
                 activeShiftId: null
-            }as any
+            }
         });
 
         const totalSales = sales._sum.totalNet || 0;

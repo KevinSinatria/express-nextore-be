@@ -113,20 +113,31 @@ const authService = {
     password,
     headers,
   }: LoginParams["body"] & { headers: any }) => {
-    const session = await auth.api.signInUsername({
-      body: { username, password },
-      headers: fromNodeHeaders(headers),
-      returnHeaders: true,
-    });
+
     const user = await prisma.user.findUnique({
-      where: {
-        id: session.response.user.id,
-      },
+      where: {username},
     });
 
     if (!user) {
       throw new CustomError(401, "Invalid username or password");
     }
+
+    const activeSession = await prisma.session.findFirst({
+      where: {
+        userId: user.id,
+        expiresAt: {gt: new Date()}
+      }
+    });
+
+    if (activeSession) {
+      throw new CustomError(403, "Account is already logged on another device. Please logout First")
+    }
+
+    const session = await auth.api.signInUsername({
+      body: {username, password},
+      headers: fromNodeHeaders(headers),
+      returnHeaders: true,
+    });
 
     const availablePos: any[] = [];
 

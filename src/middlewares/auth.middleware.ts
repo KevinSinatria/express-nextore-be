@@ -1,6 +1,7 @@
 import type { NextFunction, Request, Response } from "express";
 import { auth } from "../lib/auth.js";
 import { fromNodeHeaders } from "better-auth/node";
+import prisma from "../config/prisma.js";
 
 export const isAuthenticated = async (
   req: Request,
@@ -18,8 +19,12 @@ export const isAuthenticated = async (
     });
   }
 
+  const freshSession = await prisma.session.findUnique({
+    where: {id: session.session.id}
+  });
+
   req.user = session.user;
-  req.session = session.session;
+  req.session = freshSession as any;
 
   next();
 };

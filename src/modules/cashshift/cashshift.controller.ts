@@ -4,6 +4,7 @@ import sendResponse from "../../utils/sendResponse.js";
 import prisma from "../../config/prisma.js";
 import { Prisma } from "../../generated/prisma/client.js";
 import { ReportStatus } from "../../generated/prisma/enums.js";
+import { CustomError } from "../../utils/custom-error.js";
 
 const cashShiftController = {
     getAllshift: async (req: Request, res: Response, next: NextFunction) => {
@@ -92,6 +93,18 @@ const cashShiftController = {
             const {isIssues, additionalCash, notes, reportStatus } = req.body;
             const supervisorId = req.user!.id;
 
+            const targetShift = await prisma.cashShift.findUnique({
+                where: {id: shiftId}
+            });
+
+            if (!targetShift) {
+                throw new CustomError(400, "Shift reports not found");
+            }
+
+            if (targetShift.status === "OPEN" ) {
+                throw new CustomError(400, "Cannot verify shift report because the shift is still OPEN, the cashier must close the shift first")
+            }
+
             const updateReport = await prisma.cashShift.update({
                 where: {id: shiftId},
                 data: {
@@ -127,7 +140,11 @@ const cashShiftController = {
         });
 
         if (!existingShift) {
-            return sendResponse(res, 404, "Shift not found");
+            throw new CustomError(404, "Shift reports not found");
+        }
+
+        if (existingShift.status === "OPEN") {
+            throw new CustomError(400, "Cannot delete shift report because the shift is still OPEN, the cashier must close the shift first");
         }
 
         const deleteShift = await prisma.cashShift.delete({
