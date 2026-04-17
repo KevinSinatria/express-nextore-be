@@ -181,9 +181,11 @@ const stockBatchService = {
       return newBatch;
     });
 
-    if(expiryDate) {
+    if (expiryDate) {
       notificationService.triggerRealtimeNotification();
     }
+
+    return result;
   },
 
   updateStockBatch: async ({
