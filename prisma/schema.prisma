@@ -48,13 +48,14 @@ model User {
   accounts        Account[]
   lastActive      DateTime?
 
-  transactions  Transaction[]
-  createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @updatedAt
-  cashShifts    CashShift[]
-  auditLogs     AuditLog[]
-  activePos     Pos?
-  notifications Notification[]
+  transactions          Transaction[]
+  createdAt             DateTime              @default(now())
+  updatedAt             DateTime              @updatedAt
+  cashShifts            CashShift[]
+  auditLogs             AuditLog[]
+  activePos             Pos?
+  notifications         Notification[]
+  productPriceHistories ProductPriceHistory[]
 
   @@map("user")
 }
@@ -221,8 +222,9 @@ model Product {
   bundleComponents  BundleComponent[] @relation("BundleParent")
 
   // Relasi: Jika produk ini BAGIAN dari paket lain (opsional)
-  asComponentIn  BundleComponent[] @relation("ComponentChild")
-  priceListItems PriceListItem[]
+  asComponentIn         BundleComponent[]     @relation("ComponentChild")
+  priceListItems        PriceListItem[]
+  productPriceHistories ProductPriceHistory[]
 }
 
 model BundleComponent {
@@ -327,4 +329,17 @@ model PriceListItem {
   newPrice Float
 
   @@unique([priceListId, productId])
+}
+
+model ProductPriceHistory {
+  id        String   @id @default(cuid())
+  productId String
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  oldPrice  Float
+  newPrice  Float
+  changedAt DateTime @default(now())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@map("product_price_history")
 }
