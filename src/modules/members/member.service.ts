@@ -68,7 +68,7 @@ const memberService = {
     return await prisma.member.create({
       data: {
         name: data.name,
-        phone: data.phone ?? "",
+        phone: String(data.phone),
         isActive: true,
       },
     });
@@ -83,16 +83,14 @@ const memberService = {
   }) => {
     const updateData: Prisma.MemberUpdateInput = {};
 
-    if (data.name !== undefined) updateData.name = data.name;
-
-    if (data.phone !== undefined) {
-      updateData.phone = data.phone ?? "";
-    }
-
     try {
       const member = await prisma.member.update({
         where: { id },
-        data: updateData,
+        data: {
+          ...(data.name !== undefined && { name: data.name }),
+          ...(data.phone !== undefined && { phone: String(data.phone) }),
+          ...(data.isActive !== undefined && { isActive: data.isActive }),
+        },
       });
       return member;
     } catch (err) {
@@ -108,8 +106,8 @@ const memberService = {
   toggleStatus: async (id: string, isActive: boolean) => {
     try {
       return await prisma.member.update({
-        where: {id},
-        data: {isActive},
+        where: { id },
+        data: { isActive },
       });
     } catch (err) {
       if (err instanceof Prisma.PrismaClientKnownRequestError) {

@@ -12,6 +12,7 @@ import stockBatchRoute from "./modules/stock-batches/stock-batch.route.js";
 import reportRoute from "./modules/reports/report.route.js";
 import notificationRoute from "./modules/notifications/notification.route.js";
 import priceListRoute from "./modules/price-lists/price-list.route.js";
+import purchaseOrderRoute from "./modules/purchase-orders/purchase-order.route.js";
 
 const routes = express.Router();
 
@@ -28,5 +29,6 @@ routes.use("/stock-batches", stockBatchRoute);
 routes.use("/reports", reportRoute);
 routes.use("/notifications", notificationRoute);
 routes.use("/price-lists", priceListRoute);
+routes.use("/purchase-orders", purchaseOrderRoute);
 
 export default routes;
