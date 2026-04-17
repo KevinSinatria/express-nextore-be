@@ -150,7 +150,7 @@ const stockBatchService = {
 
     const batchNumber = await generateBatchNumber();
 
-    return await prisma.$transaction(async (tx) => {
+    const result = await prisma.$transaction(async (tx) => {
       const newBatch = await tx.stockBatch.create({
         data: {
           productId,

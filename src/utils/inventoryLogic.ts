@@ -1,3 +1,4 @@
+import { text } from "stream/consumers";
 import { Prisma } from "../generated/prisma/client.js";
 
 /**
@@ -66,3 +67,13 @@ export const syncBundleHpp = async (
     await checkLossAlert(tx, bundle.bundleProductId);
   }
 };
+
+export const syncExpiredBatches = async (tx: Prisma.TransactionClient) => {
+  await tx.stockBatch.updateMany({
+    where: {
+      expiryDate: {lt: new Date()},
+      status: "ACTIVE"
+    },
+    data: {status: "EXPIRED"}
+  })
+}

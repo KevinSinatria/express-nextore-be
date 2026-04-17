@@ -11,6 +11,9 @@ CREATE TYPE "TransactionStatus" AS ENUM ('COMPLETED', 'PENDING', 'CANCELLED');
 CREATE TYPE "BatchStatus" AS ENUM ('ACTIVE', 'EXPIRED');
 
 -- CreateEnum
+CREATE TYPE "ReportStatus" AS ENUM ('PENDING', 'COMPLETED');
+
+-- CreateEnum
 CREATE TYPE "ShiftStatus" AS ENUM ('OPEN', 'CLOSED');
 
 -- CreateTable
@@ -56,6 +59,7 @@ CREATE TABLE "session" (
     "userId" TEXT NOT NULL,
     "activeRole" "Role",
     "activePosId" TEXT,
+    "activeShiftId" TEXT,
 
     CONSTRAINT "session_pkey" PRIMARY KEY ("id")
 );
@@ -146,6 +150,7 @@ CREATE TABLE "Transaction" (
     "cashReceived" DOUBLE PRECISION,
     "change" DOUBLE PRECISION,
     "status" "TransactionStatus" NOT NULL DEFAULT 'PENDING',
+    "cashShiftId" TEXT,
     "userId" TEXT NOT NULL,
     "posId" TEXT,
     "memberId" TEXT,
@@ -225,6 +230,12 @@ CREATE TABLE "CashShift" (
     "actualCash" DOUBLE PRECISION,
     "difference" DOUBLE PRECISION,
     "status" "ShiftStatus" NOT NULL DEFAULT 'OPEN',
+    "isIssues" BOOLEAN NOT NULL DEFAULT false,
+    "additionalCash" DOUBLE PRECISION NOT NULL DEFAULT 0,
+    "notes" TEXT,
+    "reportStatus" "ReportStatus" NOT NULL DEFAULT 'PENDING',
+    "verifiedBy" TEXT,
+    "verifiedAt" TIMESTAMP(3),
 
     CONSTRAINT "CashShift_pkey" PRIMARY KEY ("id")
 );
@@ -339,6 +350,9 @@ ALTER TABLE "session" ADD CONSTRAINT "session_userId_fkey" FOREIGN KEY ("userId"
 
 -- AddForeignKey
 ALTER TABLE "account" ADD CONSTRAINT "account_userId_fkey" FOREIGN KEY ("userId") REFERENCES "user"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Transaction" ADD CONSTRAINT "Transaction_cashShiftId_fkey" FOREIGN KEY ("cashShiftId") REFERENCES "CashShift"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "Transaction" ADD CONSTRAINT "Transaction_userId_fkey" FOREIGN KEY ("userId") REFERENCES "user"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
