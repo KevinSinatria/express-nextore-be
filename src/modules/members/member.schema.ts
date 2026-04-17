@@ -10,7 +10,7 @@ const getAllMembersSchema = z.object({
 
 const getMemberByIdSchema = z.object({
   params: z.object({
-    id: z.string().cuid(),
+    id: z.string(),
   }),
 });
 
@@ -18,10 +18,11 @@ const createMemberSchema = z.object({
   body: z.object({
     name: z.string().min(1, "Name must be at least 1 character"),
     phone: z
-      .string()
+      .number("Phone number must be a number")
       .min(8, "Phone number minimum 8 digits")
       .optional()
       .nullable(),
+    isActive: z.boolean().optional(),
   }),
 });
 
@@ -31,14 +32,18 @@ const updateMemberSchema = z.object({
   }),
   body: z.object({
     name: z.string().min(1).optional(),
-    phone: z.string().min(8).optional().nullable(),
-    points: z.number().int().optional(),
+    phone: z
+      .number("Phone number must be a number")
+      .min(8, "Phone number minimum 8 digits")
+      .optional()
+      .nullable(),
+    isActive: z.boolean().optional(),
   }),
 });
 
 const deleteMemberSchema = z.object({
   params: z.object({
-    id: z.string().cuid(),
+    id: z.string(),
   }),
 });
 

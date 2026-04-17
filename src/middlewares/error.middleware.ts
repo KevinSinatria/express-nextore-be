@@ -73,8 +73,6 @@ export const errorHandler = (
       ?.fields as string | string[];
     let cleanName: string;
 
-    console.log("target: ", target);
-
     if (Array.isArray(target)) {
       cleanName = target.join(", ");
     } else {
@@ -85,6 +83,24 @@ export const errorHandler = (
     return res.status(409).json({
       success: false,
       message: `Conflict: ${cleanName} already exists.`,
+    });
+  }
+
+  // Handle Prisma foreign key constraint errors
+  if (err instanceof PrismaClientKnownRequestError && err.code === "P2003") {
+    return res.status(409).json({
+      success: false,
+      message:
+        "Cannot delete or modify record because it is currently referenced by other records (Foreign Key Constraint Warning).",
+    });
+  }
+
+  // Handle Prisma relation violation errors
+  if (err instanceof PrismaClientKnownRequestError && err.code === "P2014") {
+    return res.status(409).json({
+      success: false,
+      message:
+        "The change you are trying to make would violate the required relation between models.",
     });
   }
 

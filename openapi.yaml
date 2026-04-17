@@ -44,7 +44,8 @@ tags:
     description: Pengelolaan data pengguna/staf sistem (Admin only)
   - name: Reports
     description: Pelaporan transaksi penjualan dan inventaris stok
-
+  - name: Purchase Orders
+    description: Pengelolaan draft dan order pembelian barang (Restock)
 components:
   securitySchemes:
     cookieAuth:
@@ -384,10 +385,16 @@ components:
           nullable: true
           description: "Nomor telepon member (minimal 8 digit)."
           example: "081234567890"
-        points:
-          type: integer
-          description: "Jumlah poin yang dikumpulkan oleh member."
-          example: 150
+        isActive:
+          type: boolean
+          description: "Status keaktifan member."
+          example: true
+        _count:
+          type: object
+          properties:
+            transactions:
+              type: integer
+          description: "Statistik ringkas member."
         createdAt:
           type: string
           format: date-time
@@ -737,6 +744,49 @@ components:
             id: { type: string, format: cuid }
             name: { type: string }
             email: { type: string, format: email, nullable: true }
+
+    PurchaseOrder:
+      type: object
+      required: [id, productId, qty, purchasePrice, status, createdById, createdAt, updatedAt]
+      properties:
+        id:
+          type: string
+          format: cuid
+        invoiceNumber:
+          type: string
+          nullable: true
+        productId:
+          type: string
+          format: cuid
+        qty:
+          type: integer
+        purchasePrice:
+          type: number
+        expiryDate:
+          type: string
+          format: date-time
+          nullable: true
+        status:
+          type: string
+          enum: [PENDING, APPROVED, REJECTED]
+        notes:
+          type: string
+          nullable: true
+        createdById:
+          type: string
+          format: cuid
+        approvedById:
+          type: string
+          format: cuid
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        product:
+          $ref: "#/components/schemas/Product"
 
   responses:
     BadRequest:
@@ -1983,9 +2033,13 @@ paths:
                   description: "Nama lengkap member."
                   example: "Budi Santoso"
                 phone:
-                  type: string
-                  description: "Nomor telepon aktif."
-                  example: "081234567890"
+                  type: integer
+                  description: "Nomor telepon aktif (input sebagai angka)."
+                  example: 81234567890
+                isActive:
+                  type: boolean
+                  description: "Status awal member."
+                  example: true
       responses:
         "201":
           description: "Member berhasil terdaftar."
@@ -2060,11 +2114,13 @@ paths:
                   description: "Nama lengkap baru."
                   example: "Budi Santoso (Updated)"
                 phone:
-                  type: string
-                  description: "Nomor telepon baru."
-                points:
                   type: integer
-                  description: "Jumlah poin member."
+                  description: "Nomor telepon baru (input sebagai angka)."
+                  example: 81234567890
+                isActive:
+                  type: boolean
+                  description: "Update status keaktifan."
+                  example: true
       responses:
         "200":
           description: "Data member berhasil diperbarui."
@@ -2106,6 +2162,50 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/BaseResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    patch:
+      tags:
+        - Members
+      summary: "Ubah status keaktifan member"
+      operationId: updateMemberStatus
+      description: "Mengaktifkan atau menonaktifkan akun member pelanggan."
+      security:
+        - cookieAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: cuid
+          description: "ID unik member (format CUID)."
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [isActive]
+              properties:
+                isActive:
+                  type: boolean
+                  description: "Status keaktifan baru."
+                  example: false
+      responses:
+        "200":
+          description: "Status member berhasil diperbarui."
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/BaseResponse"
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/Member"
         "401":
           $ref: "#/components/responses/Unauthorized"
         "404":
@@ -3234,3 +3334,148 @@ paths:
       responses:
         "200":
           description: "Berhasil"
+
+  /purchase-orders:
+    get:
+      tags:
+        - Purchase Orders
+      summary: "Ambil semua Purchase Orders"
+      operationId: getAllPurchaseOrders
+      security:
+        - cookieAuth: []
+      parameters:
+        - in: query
+          name: limit
+          schema: { type: string, default: "10" }
+        - in: query
+          name: page
+          schema: { type: string, default: "1" }
+        - in: query
+          name: status
+          schema: { type: string, enum: [PENDING, APPROVED, REJECTED] }
+        - in: query
+          name: search
+          schema: { type: string }
+      responses:
+        "200":
+          description: "Berhasil"
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/BaseResponse"
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/PurchaseOrder"
+    post:
+      tags:
+        - Purchase Orders
+      summary: "Buat Draft Pembelian Baru"
+      operationId: createPurchaseOrder
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [productId, qty, purchasePrice]
+              properties:
+                productId: { type: string, format: cuid }
+                qty: { type: integer }
+                purchasePrice: { type: number }
+                expiryDate: { type: string, format: date-time, nullable: true }
+                notes: { type: string, nullable: true }
+      responses:
+        "201":
+          description: "Draft berhasil dibuat"
+
+  /purchase-orders/{id}:
+    get:
+      tags:
+        - Purchase Orders
+      summary: "Detail Pembelian"
+      operationId: getPurchaseOrderById
+      security:
+        - cookieAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string, format: cuid }
+      responses:
+        "200":
+          description: "Berhasil"
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/BaseResponse"
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/PurchaseOrder"
+    put:
+      tags:
+        - Purchase Orders
+      summary: "Edit Draft"
+      operationId: updatePurchaseOrder
+      security:
+        - cookieAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string, format: cuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                productId: { type: string, format: cuid }
+                qty: { type: integer }
+                purchasePrice: { type: number }
+                expiryDate: { type: string, format: date-time, nullable: true }
+                notes: { type: string, nullable: true }
+      responses:
+        "200":
+          description: "Berhasil edit"
+    delete:
+      tags:
+        - Purchase Orders
+      summary: "Hapus Draft"
+      operationId: deletePurchaseOrder
+      security:
+        - cookieAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string, format: cuid }
+      responses:
+        "200":
+          description: "Berhasil hapus"
+
+  /purchase-orders/{id}/approve:
+    patch:
+      tags:
+        - Purchase Orders
+      summary: "Approve Pembelian (Restock)"
+      operationId: approvePurchaseOrder
+      description: "Ubah status ke APPROVED, buat StockBatch, dan tambah stok produk."
+      security:
+        - cookieAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string, format: cuid }
+      responses:
+        "200":
+          description: "Berhasil approved dan restock"

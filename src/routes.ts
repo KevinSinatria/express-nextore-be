@@ -13,6 +13,7 @@ import reportRoute from "./modules/reports/report.route.js";
 import notificationRoute from "./modules/notifications/notification.route.js";
 import cashShiftRoute from "./modules/cashshift/cashshift.routes.js";
 import priceListRoute from "./modules/price-lists/price-list.route.js";
+import purchaseOrderRoute from "./modules/purchase-orders/purchase-order.route.js";
 
 const routes = express.Router();
 
@@ -30,5 +31,6 @@ routes.use("/reports", reportRoute);
 routes.use("/notifications", notificationRoute);
 routes.use("/cashshift", cashShiftRoute);
 routes.use("/price-lists", priceListRoute);
+routes.use("/purchase-orders", purchaseOrderRoute);
 
 export default routes;
