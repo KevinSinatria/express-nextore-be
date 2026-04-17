@@ -29,7 +29,10 @@ interface ExcelOptions {
   currencyKeys?: string[];
 }
 
-export async function convertToExcel(data: any[], options: ExcelOptions = {}): Promise<Buffer> {
+export async function convertToExcel(
+  data: any[],
+  options: ExcelOptions = {},
+): Promise<Buffer> {
   const workbook = new ExcelJS.Workbook();
   const subtitles = options.subtitles || [];
   const headerRowIndex = 4 + subtitles.length;
@@ -46,11 +49,16 @@ export async function convertToExcel(data: any[], options: ExcelOptions = {}): P
   const title = options.title || "Data Report";
   const keys = Object.keys(data[0]);
   const numCols = keys.length;
-  
+
   worksheet.mergeCells(1, 1, 1, numCols);
   const titleCell = worksheet.getCell(1, 1);
   titleCell.value = title;
-  titleCell.font = { name: "Arial", size: 16, bold: true, color: { argb: "FF111827" } };
+  titleCell.font = {
+    name: "Arial",
+    size: 16,
+    bold: true,
+    color: { argb: "FF111827" },
+  };
   titleCell.alignment = { vertical: "middle", horizontal: "center" };
   worksheet.getRow(1).height = 30;
 
@@ -58,7 +66,12 @@ export async function convertToExcel(data: any[], options: ExcelOptions = {}): P
   worksheet.mergeCells(2, 1, 2, numCols);
   const dateCell = worksheet.getCell(2, 1);
   dateCell.value = `Generated on: ${new Date().toLocaleString("id-ID")}`;
-  dateCell.font = { name: "Arial", size: 10, italic: true, color: { argb: "FF6B7280" } };
+  dateCell.font = {
+    name: "Arial",
+    size: 10,
+    italic: true,
+    color: { argb: "FF6B7280" },
+  };
   dateCell.alignment = { vertical: "middle", horizontal: "center" };
   worksheet.getRow(2).height = 20;
 
@@ -68,7 +81,12 @@ export async function convertToExcel(data: any[], options: ExcelOptions = {}): P
     worksheet.mergeCells(rowIdx, 1, rowIdx, numCols);
     const cell = worksheet.getCell(rowIdx, 1);
     cell.value = subtitle;
-    cell.font = { name: "Arial", size: 10, bold: true, color: { argb: "FF374151" } };
+    cell.font = {
+      name: "Arial",
+      size: 10,
+      bold: true,
+      color: { argb: "FF374151" },
+    };
     cell.alignment = { vertical: "middle", horizontal: "center" };
     worksheet.getRow(rowIdx).height = 20;
   });
@@ -81,14 +99,19 @@ export async function convertToExcel(data: any[], options: ExcelOptions = {}): P
   worksheet.columns = keys.map((key) => ({
     key,
   }));
-  
+
   const headerRow = worksheet.getRow(headerRowIndex);
   keys.forEach((key, index) => {
     const cell = headerRow.getCell(index + 1);
     cell.value = formatHeader(key);
   });
 
-  headerRow.font = { name: "Arial", size: 11, bold: true, color: { argb: "FFFFFFFF" } };
+  headerRow.font = {
+    name: "Arial",
+    size: 11,
+    bold: true,
+    color: { argb: "FFFFFFFF" },
+  };
   headerRow.fill = {
     type: "pattern",
     pattern: "solid",
@@ -99,14 +122,14 @@ export async function convertToExcel(data: any[], options: ExcelOptions = {}): P
 
   const currencyKeys = options.currencyKeys || [];
   const totals: Record<string, number> = {};
-  currencyKeys.forEach(k => totals[k] = 0);
+  currencyKeys.forEach((k) => (totals[k] = 0));
 
   // 5. Add Data
   data.forEach((rowObj, index) => {
     // Determine row number for data
     const rowNumber = index + headerRowIndex + 1;
     const row = worksheet.getRow(rowNumber);
-    
+
     keys.forEach((key, colIndex) => {
       const cell = row.getCell(colIndex + 1);
       const val = rowObj[key];
@@ -114,7 +137,7 @@ export async function convertToExcel(data: any[], options: ExcelOptions = {}): P
 
       // Collect totals
       if (typeof val === "number" && currencyKeys.includes(key)) {
-        totals[key] += val;
+        totals[key]! += val;
       }
     });
 
@@ -123,7 +146,7 @@ export async function convertToExcel(data: any[], options: ExcelOptions = {}): P
     row.fill = {
       type: "pattern",
       pattern: "solid",
-      fgColor: { argb: isEven ? "FFFFFFFF" : "FFF9FAFB" } // Pure White or Lighter Gray
+      fgColor: { argb: isEven ? "FFFFFFFF" : "FFF9FAFB" }, // Pure White or Lighter Gray
     };
     row.font = { name: "Arial", size: 10, color: { argb: "FF374151" } };
     row.alignment = { vertical: "middle", indent: 1 }; // indent gives horizontal left-padding
@@ -134,7 +157,7 @@ export async function convertToExcel(data: any[], options: ExcelOptions = {}): P
   if (currencyKeys.length > 0 && data.length > 0) {
     const totalRowNumber = data.length + headerRowIndex + 1;
     const totalRow = worksheet.getRow(totalRowNumber);
-    
+
     const firstCell = totalRow.getCell(1);
     firstCell.value = "TOTAL";
     firstCell.alignment = { horizontal: "center", vertical: "middle" };
@@ -145,7 +168,12 @@ export async function convertToExcel(data: any[], options: ExcelOptions = {}): P
       }
     });
 
-    totalRow.font = { name: "Arial", size: 11, bold: true, color: { argb: "FF111827" } };
+    totalRow.font = {
+      name: "Arial",
+      size: 11,
+      bold: true,
+      color: { argb: "FF111827" },
+    };
     totalRow.fill = {
       type: "pattern",
       pattern: "solid",
@@ -155,14 +183,14 @@ export async function convertToExcel(data: any[], options: ExcelOptions = {}): P
   }
 
   // 7. Setup Styling & Auto-Width for all cells
-  
+
   worksheet.columns.forEach((column, index) => {
     const key = keys[index];
-    const isCurrency = currencyKeys.includes(key);
+    const isCurrency = currencyKeys.includes(key!);
     let maxLength = 0;
 
     // Evaluate Header length
-    const headerValue = formatHeader(key);
+    const headerValue = formatHeader(key!);
     if (headerValue.length > maxLength) {
       maxLength = headerValue.length;
     }
@@ -194,13 +222,13 @@ export async function convertToExcel(data: any[], options: ExcelOptions = {}): P
 
         // Evaluate Data length
         if (cell.value) {
-            // Limit max evaluation to keep wide cells from getting absurdly long.
-            const valStr = cell.value.toString();
-            if (valStr.length > maxLength && valStr.length <= 40) {
-                maxLength = valStr.length;
-            } else if (valStr.length > 40) {
-                maxLength = 40; // Cap width slightly higher
-            }
+          // Limit max evaluation to keep wide cells from getting absurdly long.
+          const valStr = cell.value.toString();
+          if (valStr.length > maxLength && valStr.length <= 40) {
+            maxLength = valStr.length;
+          } else if (valStr.length > 40) {
+            maxLength = 40; // Cap width slightly higher
+          }
         }
       }
     });
