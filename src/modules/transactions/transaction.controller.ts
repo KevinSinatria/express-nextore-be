@@ -72,10 +72,18 @@ const transactionController = {
   ) => {
     try {
       const userId = req.user!.id;
-      const posId = req.session?.activePosId;
+      const session = req.session as any;
+      const posId = session?.activePosId;
+      const activeShiftId = session?.activeShiftId;
+
+      if (!activeShiftId) {
+        return sendResponse(res, 400, "Transaction cannot be created because there is no active shift", null);
+      }
+
       const result = await transactionService.createTransaction({
         data: req.body,
         userId,
+        ...(activeShiftId && {cashShiftId: activeShiftId}),
         ...(posId && { posId }),
       });
 
@@ -90,8 +98,10 @@ const transactionController = {
     next: NextFunction,
   ) => {
     try {
+      const userIdAsli = req.user!.id;
       const result = await transactionService.deleteTransaction({
         id: req.params.id,
+        userIdAsli: userIdAsli,
       });
       sendResponse(res, 200, "Transaction cancelled successfully", result);
     } catch (error) {
@@ -104,9 +114,11 @@ const transactionController = {
     next: NextFunction,
   ) => {
     try {
+      const userIdAsli = req.user!.id;
       const result = await transactionService.updatePendingTransaction({
         id: req.params.id,
         data: req.body,
+        userIdAsli: userIdAsli,
       });
       sendResponse(
         res,

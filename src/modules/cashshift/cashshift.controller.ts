@@ -3,6 +3,7 @@ import cashShiftService from "./cashshift.service.js";
 import sendResponse from "../../utils/sendResponse.js";
 import prisma from "../../config/prisma.js";
 import { Prisma } from "../../generated/prisma/client.js";
+import { ReportStatus } from "../../generated/prisma/enums.js";
 
 const cashShiftController = {
     getAllshift: async (req: Request, res: Response, next: NextFunction) => {
@@ -97,7 +98,7 @@ const cashShiftController = {
                     isIssues: Boolean(isIssues),
                     additionalCash: Number(additionalCash) || 0,
                     notes,
-                    reportStatus: reportStatus || "VERIFIED",
+                    reportStatus: (reportStatus as ReportStatus) || ReportStatus.COMPLETED,
                     verifiedBy: supervisorId,
                     verifiedAt: new Date(),
                 },

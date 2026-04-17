@@ -11,18 +11,30 @@ const cashShiftService = {
             throw new CustomError(400, "You still have unclosed shifts.");
         }
 
-        return await prisma.cashShift.create({
+        const newShift = await prisma.cashShift.create({
             data: {
                 userId,
                 startingCash,
                 status: "OPEN",
             },
         });
+
+        await prisma.session.updateMany({
+            where: {
+                userId: userId,
+                expiresAt: {gt: new Date()}
+            },
+            data: {
+                activeShiftId: newShift.id
+            }as any
+        });
+        return newShift;
     },
     
     getCurrentShiftStatus: async (userId: string) => {
         const shift = await prisma.cashShift.findFirst({
             where: {userId, status: "OPEN"},
+            include: {user: {select: {name: true}}}
         });
 
         if (!shift) throw new CustomError(404, "No active shift found");
@@ -61,6 +73,15 @@ const cashShiftService = {
                 status: "COMPLETED",
             },
             _sum: {totalNet: true},
+        });
+
+        await prisma.session.updateMany({
+            where: {
+                userId: userId,
+            },
+            data: {
+                activeShiftId: null
+            }as any
         });
 
         const totalSales = sales._sum.totalNet || 0;

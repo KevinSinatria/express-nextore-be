@@ -60,17 +60,18 @@ model User {
 }
 
 model Session {
-  id          String   @id @default(cuid())
-  expiresAt   DateTime
-  token       String   @unique
-  createdAt   DateTime
-  updatedAt   DateTime
-  ipAddress   String?
-  userAgent   String?
-  userId      String
-  activeRole  Role?
-  activePosId String?
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id            String   @id @default(cuid())
+  expiresAt     DateTime
+  token         String   @unique
+  createdAt     DateTime
+  updatedAt     DateTime
+  ipAddress     String?
+  userAgent     String?
+  userId        String
+  activeRole    Role?
+  activePosId   String?
+  activeShiftId String?
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@map("session")
@@ -260,6 +261,11 @@ enum BatchStatus {
   EXPIRED
 }
 
+enum ReportStatus {
+  PENDING
+  COMPLETED
+}
+
 model CashShift {
   id             String        @id @default(cuid())
   userId         String
@@ -275,7 +281,7 @@ model CashShift {
   isIssues       Boolean       @default(false)
   additionalCash Float         @default(0)
   notes          String?
-  reportStatus   String        @default("PENDING")
+  reportStatus   ReportStatus  @default(PENDING)
   verifiedBy     String?
   verifiedAt     DateTime?
 }

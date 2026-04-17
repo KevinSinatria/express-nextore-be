@@ -159,10 +159,12 @@ const transactionService = {
     data,
     userId,
     posId,
+    cashShiftId,
   }: {
     data: createTransactionParams["body"];
     userId: string;
     posId?: string;
+    cashShiftId?: string;
   }) => {
     const {
       memberId,
@@ -174,7 +176,7 @@ const transactionService = {
     } = data;
     const invoiceNumber = await generateInvoiceNumber();
 
-    const result = await prisma.$transaction(async (tx) => {
+     const result = await prisma.$transaction(async (tx) => {
 
       const activeShift = await tx.cashShift.findFirst({
         where: {userId, status: "OPEN"},
@@ -184,6 +186,7 @@ const transactionService = {
         throw new CustomError(404, "Active shift not found. you has been open a shift");
       }
     })
+
 
     if (status === "PENDING" && (!customerName || customerName.trim() === "")) {
       throw new CustomError(
@@ -420,6 +423,7 @@ const transactionService = {
           customerName: customerName ?? null,
           userId,
           posId: posId ?? null,
+          cashShiftId: cashShiftId ?? null,
           memberId: memberId ?? null,
           items: {
             create: transactionItems,
