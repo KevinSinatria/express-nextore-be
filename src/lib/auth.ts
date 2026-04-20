@@ -1,6 +1,6 @@
 import { betterAuth } from "better-auth";
 import { prismaAdapter } from "@better-auth/prisma-adapter";
-import { customSession, openAPI, username } from "better-auth/plugins";
+import { admin, customSession, openAPI, username } from "better-auth/plugins";
 import prisma from "../config/prisma.js";
 import { env } from "../config/env.js";
 import { createId } from "@paralleldrive/cuid2";
@@ -28,9 +28,33 @@ export const auth = betterAuth({
     expiresIn: 60 * 60,
     updateAge: 60 * 5,
   },
+  databaseHooks: {
+    user: {
+      create: {
+        before: async (user) => {
+          const { role, ...rest } = user as any;
+          return {
+            data: {
+              ...rest,
+              roles: role ? [role.toUpperCase()] : [],
+            },
+          };
+        },
+      },
+    },
+  },
   plugins: [
     username(),
     openAPI(),
+    // admin({
+    //   roles: {
+    //     CASHIER: {},
+    //     ADMIN: {},
+    //     SUPERVISOR: {},
+    //     SUPERUSER: {},
+    //   } as Record<string, any>,
+    //   adminRoles: ["ADMIN", "SUPERUSER"] as Role[],
+    // }),
     customSession(async ({ user, session }) => {
       const userData = await prisma.user.findUnique({
         where: {

@@ -412,9 +412,19 @@ components:
         name:
           type: string
           minLength: 1
-          maxLength: 50
+          maxLength: 20
           description: "Nama lengkap user."
           example: "Andi Wijaya"
+        email:
+          type: string
+          format: email
+          nullable: true
+          description: "Alamat email user."
+          example: "andi@nextore.com"
+        emailVerified:
+          type: boolean
+          description: "Menunjukkan apakah email user telah diverifikasi."
+          default: false
         username:
           type: string
           minLength: 1
@@ -427,11 +437,6 @@ components:
           nullable: true
           description: "Nama tampilan user (opsional)."
           example: "Andi W."
-        image:
-          type: string
-          format: uri
-          nullable: true
-          description: "URL foto profil user."
         roles:
           type: array
           items:
@@ -439,6 +444,16 @@ components:
             enum: [SUPERUSER, ADMIN, SUPERVISOR, CASHIER]
           description: "Daftar peran atau hak akses user dalam sistem."
           example: ["CASHIER"]
+        accounts:
+          type: array
+          items:
+            type: object
+          description: "Daftar akun eksternal yang terhubung (OAuth)."
+        sessions:
+          type: array
+          items:
+            type: object
+          description: "Daftar sesi aktif user."
         lastActive:
           type: string
           format: date-time
@@ -2299,7 +2314,7 @@ paths:
                   description: "Daftar peran akses user."
                   example: ["CASHIER"]
       responses:
-        "201":
+        "200":
           description: "Pengguna berhasil dibuat."
           content:
             application/json:
@@ -2425,6 +2440,11 @@ paths:
                     type: string
                     enum: [SUPERUSER, ADMIN, SUPERVISOR, CASHIER]
                   description: "Daftar peran baru."
+                password:
+                  type: string
+                  format: password
+                  minLength: 8
+                  description: "Kata sandi baru."
       responses:
         "200":
           description: "Data pengguna berhasil diperbarui."
@@ -3143,30 +3163,6 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/BaseResponse"
-
-  /users:
-    get:
-      tags:
-        - Users
-      summary: "Ambil daftar user/staf"
-      operationId: getUsers
-      description: "Mendapatkan daftar user/staf (hanya untuk Admin & Superuser)."
-      security:
-        - cookieAuth: []
-      responses:
-        "200":
-          description: "Berhasil"
-          content:
-            application/json:
-              schema:
-                allOf:
-                  - $ref: "#/components/schemas/BaseResponse"
-                  - type: object
-                    properties:
-                      data:
-                        type: array
-                        items:
-                          $ref: "#/components/schemas/User"
 
   /price-lists:
     get:
