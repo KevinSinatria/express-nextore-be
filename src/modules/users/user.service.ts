@@ -8,6 +8,7 @@ import {
 } from "../../utils/pagination.js";
 import { CustomError } from "../../utils/custom-error.js";
 import { auth } from "../../lib/auth.js";
+import { hashPassword } from "better-auth/crypto";
 
 type CreateUserParams = z.infer<typeof userSchema.createUserSchema>;
 
@@ -87,27 +88,28 @@ const userService = {
 
   updateUser: async ({ id, data }: { id: string; data: any }) => {
     try {
-      // if (data.password) {
-      //     await (auth.api as any).setPassword({
-      //         body: {
-      //             userId: id,
-      //             newPassword: data.password,
-      //         }
-      //     });
-      // }
-
       const updateData: Prisma.UserUpdateInput = {};
 
       if (data.name) updateData.name = data.name;
       if (data.roles) updateData.roles = data.roles;
-      if (data.image !== undefined) updateData.image = data.image;
+      if (data.password) {
+        const hashedPassword = await hashPassword(data.password);
+
+        await prisma.account.updateMany({
+          where: {
+            userId: id,
+            providerId: "credential",
+          },
+          data: {
+            password: hashedPassword,
+          },
+        });
+      }
 
       if (data.username) {
         updateData.username = data.username;
         updateData.displayUsername = data.username;
       }
-
-      console.log("Data yang akan diproses Prisma:", updateData);
 
       const updatedUser = await prisma.user.update({
         where: { id },

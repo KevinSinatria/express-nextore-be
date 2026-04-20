@@ -66,6 +66,14 @@ const updateUserSchema = z.object({
       )
       .optional(),
     roles: z.array(z.enum(Role)).optional(),
+    password: z
+      .string()
+      .min(8, "Password must be at least 8 characters")
+      .regex(
+        /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/,
+        "Password must contain at least one lowercase letter, one uppercase letter, and one number",
+      )
+      .optional(),
   }),
 });
 
