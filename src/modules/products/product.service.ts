@@ -113,7 +113,7 @@ const productService = {
     id: GetProductByIdParams["params"]["id"];
   }) => {
     try {
-      const product = await prisma.product.findUnique({
+      const product = await prisma.product.findUniqueOrThrow({
         where: {
           id,
         },
