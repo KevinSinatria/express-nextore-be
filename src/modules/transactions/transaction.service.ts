@@ -227,6 +227,8 @@ const transactionService = {
         }
       }
 
+      const now = new Date();
+
       const activeDiscount = await tx.discount.findMany({
         where: {
           isActive: true,
@@ -237,6 +239,7 @@ const transactionService = {
             gte: new Date(),
           },
         },
+        include: { products: {select: {id: true}}}
       });
 
       const getActiveTransactionDiscount = async () => {
@@ -246,7 +249,7 @@ const transactionService = {
             d.isTransactionLevel &&
             now >= d.startDate &&
             now <= d.endDate &&
-            (member ? d.isMemberLevel : true)
+            (member ? true : d.isMemberLevel === false)
           );
         });
       };
@@ -271,14 +274,14 @@ const transactionService = {
 
       for (const item of items) {
         const getBestItemDiscount = (product: any) => {
-          const now = new Date();
+          const productWithDiscounts = product.discount || [];
 
-          const validDiscounts = product.discount.filter(
+          const validDiscounts = productWithDiscounts.filter(
             (d: any) =>
               d.isActive &&
               now >= d.startDate &&
               now <= d.endDate &&
-              (member ? d.isMemberLevel : true),
+              (member ? true : d.isMemberLevel === false),
           );
 
           if (validDiscounts.length === 0) return 0;
@@ -411,6 +414,7 @@ const transactionService = {
       totalDiscount += transactionDiscountAmount;
       totalNet = totalGross - totalDiscount;
       totalProfit -= transactionDiscountAmount;
+
       const totalHpp = transactionItems.reduce(
         (acc, curr) => acc + curr.hppAtSale * curr.qty,
         0,

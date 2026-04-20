@@ -1,4 +1,4 @@
-import type z from "zod";
+import z from "zod";
 import type discountSchema from "./discount.schema.js";
 import {
   createPaginationMeta,
@@ -104,6 +104,44 @@ const discountService = {
       discountData.startDate = new Date();
     }
 
+    const start = new Date(discountData.startDate);
+    const end = new Date(discountData.endDate);
+
+    if(discountData.isTransactionLevel) {
+      const overLapGlobal = await prisma.discount.findFirst({
+        where: {
+          isTransactionLevel: true,
+          isMemberLevel: discountData.isMemberLevel,
+          isActive: true,
+          AND: [
+            {startDate: {lte: end}},
+            {endDate: {gte: start}}
+          ]
+        }
+      });
+      if (overLapGlobal) {
+        throw new CustomError(400, "A global transaction discount already exists for this period.");
+      }
+    }
+
+    if (productIds && productIds.length > 0) {
+      const overLapProduct = await prisma.discount.findFirst({
+        where: {
+          isActive: true,
+          isMemberLevel: discountData.isMemberLevel,
+          products: {some: {id: {in: productIds}}},
+          AND: [
+            {startDate: {lte: end}},
+            {endDate: {gte: start}}
+          ]
+        },
+        include: {products: {select: {name: true}}}
+      });
+      if (overLapProduct) {
+        throw new CustomError(400, `Conflict: One or more products already have an active discount for this period.`)
+      }
+    }
+
     const discount = await prisma.discount.create({
       data: {
         ...discountData,
@@ -136,8 +174,44 @@ const discountService = {
       }
     }
 
-    if (!discountData.startDate) {
-      discountData.startDate = new Date();
+    const existingDiscount = await prisma.discount.findUnique({ where: { id } });
+    if (!existingDiscount) {
+        throw new CustomError(404, `Discount with ID ${id} not found.`);
+    }
+
+    const start = new Date(discountData.startDate || existingDiscount.startDate);
+    const end = new Date(discountData.endDate || existingDiscount.endDate);
+    const isMemberLevel = discountData.isMemberLevel || existingDiscount.isMemberLevel;
+    
+    if (discountData.isTransactionLevel) {
+      const overlapGlobal = await prisma.discount.findFirst({
+        where: {
+          id: { not: id },
+          isTransactionLevel: true,
+          isMemberLevel: isMemberLevel,
+          isActive: true,
+          AND: [
+            { startDate: { lte: end } },
+            { endDate: { gte: start } }
+          ]
+        }
+      });
+      if (overlapGlobal) throw new CustomError(400, "Conflict with another global discount period.");
+    }
+
+    if (productIds && productIds.length > 0) {
+      const overlapProduct = await prisma.discount.findFirst({
+        where: {
+          id: { not: id },
+          isActive: true,
+          products: { some: { id: { in: productIds } } },
+          AND: [
+            { startDate: { lte: end } },
+            { endDate: { gte: start } }
+          ]
+        }
+      });
+      if (overlapProduct) throw new CustomError(400, "Conflict: Products already have an active discount in this period.");
     }
 
     try {

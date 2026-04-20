@@ -31,6 +31,7 @@ const createDiscountSchema = z.object({
     endDate: z.string().transform((val) => new Date(val)),
     isActive: z.boolean().optional().default(true),
     isTransactionLevel: z.boolean().optional().default(false),
+    isMemberLevel: z.boolean().optional().default(false),
     productIds: z.array(z.string()).optional(),
   }),
 });
@@ -54,6 +55,7 @@ const updateDiscountSchema = z.object({
       .optional(),
     isActive: z.boolean().optional(),
     isTransactionLevel: z.boolean().optional(),
+    isMemberLevel: z.boolean().optional(),
     productIds: z.array(z.string()).optional(),
   }),
 });
