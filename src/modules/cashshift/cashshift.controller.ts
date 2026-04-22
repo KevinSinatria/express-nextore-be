@@ -50,7 +50,7 @@ const cashShiftController = {
         verifiedBy: shift.verifiedBy,
       }));
 
-      sendResponse(res, 200, "All shifts fetched successfully", {
+      sendResponse(res, 200, "Semua data shift berhasil diambil", {
         data: formattedData,
         pagination: {
           totalData,
@@ -71,7 +71,7 @@ const cashShiftController = {
 
       const result = await cashShiftService.openShift(userId, startingCash);
 
-      sendResponse(res, 201, "Shift opened successfully", result);
+      sendResponse(res, 201, "Shift berhasil dibuka", result);
     } catch (error) {
       next(error);
     }
@@ -98,13 +98,13 @@ const cashShiftController = {
       });
 
       if (!targetShift) {
-        throw new CustomError(400, "Shift reports not found");
+        throw new CustomError(400, "Laporan shift tidak ditemukan");
       }
 
       if (targetShift.status === "OPEN") {
         throw new CustomError(
           400,
-          "Cannot verify shift report because the shift is still OPEN, the cashier must close the shift first",
+          "Tidak dapat memverifikasi laporan shift karena shift masih OPEN, kasir harus menutup shift terlebih dahulu",
         );
       }
 
@@ -124,7 +124,7 @@ const cashShiftController = {
       sendResponse(
         res,
         200,
-        "Cashier report successfully verified by supervisor",
+        "Laporan kasir berhasil diverifikasi oleh supervisor",
         updateReport,
       );
     } catch (error) {
@@ -149,13 +149,13 @@ const cashShiftController = {
       });
 
       if (!existingShift) {
-        throw new CustomError(404, "Shift reports not found");
+        throw new CustomError(404, "Laporan shift tidak ditemukan");
       }
 
       if (existingShift.status === "OPEN") {
         throw new CustomError(
           400,
-          "Cannot delete shift report because the shift is still OPEN, the cashier must close the shift first",
+          "Tidak dapat menghapus laporan shift karena shift masih OPEN, kasir harus menutup shift terlebih dahulu",
         );
       }
 
@@ -163,7 +163,7 @@ const cashShiftController = {
         where: { id },
       });
 
-      sendResponse(res, 200, "Shift reports deleted successfully", deleteShift);
+      sendResponse(res, 200, "Laporan shift berhasil dihapus", deleteShift);
     } catch (error) {
       next(error);
     }

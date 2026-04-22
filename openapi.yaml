@@ -11,7 +11,7 @@ info:
        - Jika pengguna memiliki > 1 role, flag `requiresRoleSelection` akan bernilai `true`.
     2. **Pilih Role (`/auth/select-role`)**: Diperlukan jika `requiresRoleSelection` adalah `true`. Pengguna memilih satu role aktif untuk sesi tersebut.
     3. **Pilih POS (`/auth/select-pos`)**: Diperlukan bagi pengguna dengan role `CASHIER` atau `SUPERVISOR`. Pengguna harus memilih terminal POS yang akan digunakan sebelum dapat melakukan transaksi.
-    
+
     ### Akun Pengujian (QA):
     Terdapat akun pengujian dengan akses ke **semua role** (SUPERUSER, ADMIN, SUPERVISOR, CASHIER).
     - **Username:** `qa_tester`
@@ -437,6 +437,10 @@ components:
           nullable: true
           description: "Nama tampilan user (opsional)."
           example: "Andi W."
+        isSuspended:
+          type: boolean
+          description: "Status apakah user disuspend/dinonaktifkan sementara."
+          default: false
         roles:
           type: array
           items:
@@ -762,7 +766,17 @@ components:
 
     PurchaseOrder:
       type: object
-      required: [id, productId, qty, purchasePrice, status, createdById, createdAt, updatedAt]
+      required:
+        [
+          id,
+          productId,
+          qty,
+          purchasePrice,
+          status,
+          createdById,
+          createdAt,
+          updatedAt,
+        ]
       properties:
         id:
           type: string
@@ -2306,6 +2320,10 @@ paths:
                   minLength: 8
                   description: "Kata sandi akun."
                   example: "Password123"
+                isSuspended:
+                  type: boolean
+                  description: "Status suspend."
+                  example: false
                 roles:
                   type: array
                   items:
@@ -2440,6 +2458,9 @@ paths:
                     type: string
                     enum: [SUPERUSER, ADMIN, SUPERVISOR, CASHIER]
                   description: "Daftar peran baru."
+                isSuspended:
+                  type: boolean
+                  description: "Status suspend."
                 password:
                   type: string
                   format: password
@@ -3256,7 +3277,6 @@ paths:
           description: "Berhasil"
 
   /price-lists/{id}:
-
     get:
       tags:
         - Price Lists

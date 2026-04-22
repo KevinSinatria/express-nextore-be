@@ -15,7 +15,7 @@ export const isAuthenticated = async (
   if (!session) {
     return res.status(401).json({
       success: false,
-      message: "Unauthorized: No active session found",
+      message: "Tidak diizinkan: Tidak ada sesi aktif yang ditemukan",
     });
   }
 
@@ -37,14 +37,14 @@ export const authorizeRole = (allowedRoles: string[]) => {
     if (!user) {
       return res.status(401).json({
         success: false,
-        message: "Unauthorized: User not authenticated",
+        message: "Tidak diizinkan: Pengguna belum terautentikasi",
       });
     }
 
     if (!allowedRoles.includes(session?.activeRole!)) {
       return res.status(403).json({
         success: false,
-        message: `Forbidden: Access denied for role ${session?.activeRole}`,
+        message: `Dilarang: Akses ditolak untuk peran ${session?.activeRole}`,
       });
     }
 
@@ -58,7 +58,7 @@ export const requireActivePos = (req: Request, res: Response, next: NextFunction
   if (!session?.activePosId) {
     return res.status(403).json({
       success: false,
-      message: "Forbidden: You must select a POS machine before performingany transactions.",
+      message: "Dilarang: Anda harus memilih mesin POS sebelum melakukan transaksi apa pun.",
     });
   }
 

@@ -36,7 +36,7 @@ const purchaseOrderService = {
     });
 
     if (!product) {
-      throw new CustomError(404, `Product with ID ${productId} not found.`);
+      throw new CustomError(404, `Produk dengan ID ${productId} tidak ditemukan.`);
     }
 
     if (product.category?.hasExpiry && !expiryDate) {
@@ -146,7 +146,7 @@ const purchaseOrderService = {
     });
 
     if (!purchaseOrder) {
-      throw new CustomError(404, `Purchase Order with ID ${id} not found.`);
+      throw new CustomError(404, `Pesanan pembelian dengan ID ${id} tidak ditemukan.`);
     }
 
     return purchaseOrder;
@@ -190,13 +190,13 @@ const purchaseOrderService = {
     });
 
     if (!existingPo) {
-      throw new CustomError(404, `Purchase Order with ID ${id} not found.`);
+      throw new CustomError(404, `Pesanan pembelian dengan ID ${id} tidak ditemukan.`);
     }
 
     if (existingPo.status !== "PENDING") {
       throw new CustomError(
         400,
-        `Cannot edit Purchase Order because its status is ${existingPo.status}.`,
+        `Tidak dapat mengedit Pesanan Pembelian karena statusnya ${existingPo.status}.`,
       );
     }
 
@@ -210,7 +210,7 @@ const purchaseOrderService = {
       if (!newProduct) {
         throw new CustomError(
           404,
-          `New Product with ID ${data.productId} not found.`,
+          `Produk Baru dengan ID ${data.productId} tidak ditemukan.`,
         );
       }
       productToValidate = newProduct as any;
@@ -248,13 +248,13 @@ const purchaseOrderService = {
     });
 
     if (!existingPo) {
-      throw new CustomError(404, `Purchase Order with ID ${id} not found.`);
+      throw new CustomError(404, `Pesanan pembelian dengan ID ${id} tidak ditemukan.`);
     }
 
     if (existingPo.status !== "PENDING") {
       throw new CustomError(
         400,
-        `Cannot delete Purchase Order because its status is ${existingPo.status}. Only PENDING drafts can be deleted.`,
+        `Tidak dapat menghapus Pesanan Pembelian karena statusnya ${existingPo.status}. Hanya draf PENDING yang dapat dihapus.`,
       );
     }
 
@@ -269,7 +269,7 @@ const purchaseOrderService = {
     });
 
     if (!existingPo) {
-      throw new CustomError(404, `Purchase Order with ID ${id} not found.`);
+      throw new CustomError(404, `Pesanan pembelian dengan ID ${id} tidak ditemukan.`);
     }
 
     if (existingPo.status !== "PENDING") {

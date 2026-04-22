@@ -47,7 +47,7 @@ const userService = {
       where: { id },
       include: { accounts: true, sessions: true },
     });
-    if (!user) throw new CustomError(404, `User with ID ${id} not found`);
+    if (!user) throw new CustomError(404, `Pengguna dengan ID ${id} tidak ditemukan`);
     return user;
   },
 
@@ -57,7 +57,7 @@ const userService = {
       include: { accounts: true, sessions: true },
     });
     if (!user)
-      throw new CustomError(404, `User with username ${username} not found`);
+      throw new CustomError(404, `Pengguna dengan username ${username} tidak ditemukan`);
     return user;
   },
 
@@ -125,7 +125,7 @@ const userService = {
     } catch (err) {
       if (err instanceof Prisma.PrismaClientKnownRequestError) {
         if (err.code === "P2025") {
-          throw new CustomError(404, `User with ID "${id}" not found`);
+          throw new CustomError(404, `Pengguna dengan ID "${id}" tidak ditemukan`);
         }
       }
       throw err;

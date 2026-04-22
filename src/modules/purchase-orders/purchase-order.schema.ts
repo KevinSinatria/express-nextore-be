@@ -2,14 +2,14 @@ import { z } from "zod";
 
 const createPurchaseOrderSchema = z.object({
   body: z.object({
-    productId: z.string("Product ID is required."),
+    productId: z.string("ID Produk wajib diisi."),
     qty: z.coerce
       .number()
       .int()
-      .positive({ message: "Quantity must be a positive integer." }),
+      .positive({ message: "Kuantitas harus berupa bilangan bulat positif." }),
     purchasePrice: z.coerce
       .number()
-      .positive({ message: "Purchase price must be greater than 0." }),
+      .positive({ message: "Harga beli harus lebih besar dari 0." }),
     expiryDate: z.string().optional().nullable(),
     notes: z.string().optional().nullable(),
   }),

@@ -39,7 +39,7 @@ const categoryController = {
       sendResponse(
         res,
         200,
-        "Categories fetched successfully",
+        "Kategori berhasil diambil",
         result.data,
         result.meta,
       );
@@ -56,7 +56,7 @@ const categoryController = {
       const result = await categoryService.getCategoryById({
         id: req.params.id,
       });
-      sendResponse(res, 200, "Category fetched successfully", result);
+      sendResponse(res, 200, "Kategori berhasil diambil", result);
     } catch (error) {
       next(error);
     }
@@ -71,7 +71,7 @@ const categoryController = {
         data: req.body,
       });
 
-      sendResponse(res, 201, "Category created successfully", result);
+      sendResponse(res, 201, "Kategori berhasil dibuat", result);
     } catch (error) {
       next(error);
     }
@@ -86,7 +86,7 @@ const categoryController = {
         id: req.params.id,
         data: req.body,
       });
-      sendResponse(res, 200, "Category updated successfully", result);
+      sendResponse(res, 200, "Kategori berhasil diperbarui", result);
     } catch (error) {
       next(error);
     }
@@ -100,7 +100,7 @@ const categoryController = {
       const result = await categoryService.deleteCategory({
         id: req.params.id,
       });
-      sendResponse(res, 200, "Category deleted successfully", result);
+      sendResponse(res, 200, "Kategori berhasil dihapus", result);
     } catch (error) {
       next(error);
     }

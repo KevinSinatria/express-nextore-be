@@ -73,7 +73,7 @@ const notificationService = {
         message,
         data: expiredData,
       });
-      console.log("Success: Notification saved to DB and sent via Pusher");
+      console.log("Berhasil: Notifikasi disimpan ke DB dan dikirim via Pusher");
     }
   },
 

@@ -11,7 +11,7 @@ const posController = {
   createPos: async (req: CreatePosRequest, res: Response, next: NextFunction) => {
     try {
       const result = await posService.createPos(req.body);
-      sendResponse(res, 201, "POS terminal created successfully", result);
+      sendResponse(res, 201, "Terminal POS berhasil dibuat", result);
     } catch (error) {
       next(error);
     }
@@ -20,7 +20,7 @@ const posController = {
   getAllPos: async (req: Request, res: Response, next: NextFunction) => {
     try  {
       const result = await posService.getAllPos();
-      sendResponse(res, 200, "POS list retrieved successfully", result);
+      sendResponse(res, 200, "Daftar POS berhasil diambil", result);
     }catch (error) {
       next(error);
     }
@@ -30,7 +30,7 @@ const posController = {
     try {
       const id = req.params.id as string;
       const result = await posService.getPosById(id);
-      sendResponse(res, 200, "POS Terminal details retrieved successfully", result);
+      sendResponse(res, 200, "Detail Terminal POS berhasil diambil", result);
     } catch (error) {
       next(error);
     }
@@ -40,7 +40,7 @@ const posController = {
     try {
       const id = req.params.id;
       const result = await posService.updatePos(id, req.body);
-      sendResponse(res, 200, "POS Terminal updated successfully", result);
+      sendResponse(res, 200, "Terminal POS berhasil diperbarui", result);
     } catch (error) {
       next(error);
     }
@@ -50,7 +50,7 @@ const posController = {
     try {
       const id = req.params.id as string;
       await posService.deletePos(id);
-      sendResponse(res, 200, "POS Terminal deleted successfully");
+      sendResponse(res, 200, "Terminal POS berhasil dihapus");
     } catch (error) {
       next(error);;
     }

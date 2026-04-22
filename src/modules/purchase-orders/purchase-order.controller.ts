@@ -40,7 +40,7 @@ const purchaseOrderController = {
         data: req.body,
         userId: user.id,
       });
-      sendResponse(res, 201, "Purchase order draft created successfully", data);
+      sendResponse(res, 201, "Draf pesanan pembelian berhasil dibuat", data);
     } catch (error) {
       next(error);
     }
@@ -56,7 +56,7 @@ const purchaseOrderController = {
       sendResponse(
         res,
         200,
-        "Purchase orders fetched successfully",
+        "Pesanan pembelian berhasil diambil",
         result.data,
         result.meta,
       );
@@ -72,7 +72,7 @@ const purchaseOrderController = {
   ) => {
     try {
       const data = await purchaseOrderService.getById({ id: req.params.id });
-      sendResponse(res, 200, "Purchase order fetched successfully", data);
+      sendResponse(res, 200, "Pesanan pembelian berhasil diambil", data);
     } catch (error) {
       next(error);
     }
@@ -88,7 +88,7 @@ const purchaseOrderController = {
       sendResponse(
         res,
         200,
-        "Pending purchase orders fetched successfully",
+        "Pesanan pembelian berstatus PENDING berhasil diambil",
         result,
       );
     } catch (error) {
@@ -106,7 +106,7 @@ const purchaseOrderController = {
         id: req.params.id,
         data: req.body,
       });
-      sendResponse(res, 200, "Purchase order draft updated successfully", data);
+      sendResponse(res, 200, "Draf pesanan pembelian berhasil diperbarui", data);
     } catch (error) {
       next(error);
     }
@@ -119,7 +119,7 @@ const purchaseOrderController = {
   ) => {
     try {
       await purchaseOrderService.delete({ id: req.params.id });
-      sendResponse(res, 200, "Purchase order draft deleted successfully");
+      sendResponse(res, 200, "Draf pesanan pembelian berhasil dihapus");
     } catch (error) {
       next(error);
     }
@@ -136,7 +136,7 @@ const purchaseOrderController = {
         id: req.params.id,
         userId: user.id,
       });
-      sendResponse(res, 200, "Purchase order approved successfully", data);
+      sendResponse(res, 200, "Pesanan pembelian berhasil disetujui", data);
     } catch (error) {
       next(error);
     }

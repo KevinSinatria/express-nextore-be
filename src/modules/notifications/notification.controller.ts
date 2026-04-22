@@ -10,7 +10,7 @@ const notificationController = {
   ) => {
     try {
       await notificationService.triggerRealtimeNotification();
-      sendResponse(res, 200, "Expiry check process executed successfully");
+      sendResponse(res, 200, "Proses pengecekan kedaluwarsa berhasil dieksekusi");
     } catch (error) {
       next(error);
     }
@@ -19,7 +19,7 @@ const notificationController = {
   getExpiredList: async (req: Request, res: Response, next: NextFunction) => {
     try {
       const data = await notificationService.getExpiredNotifications();
-      sendResponse(res, 200, "Expired data fetched successdully", data);
+      sendResponse(res, 200, "Data kedaluwarsa berhasil diambil", data);
     } catch (error) {
       next(error);
     }
@@ -69,7 +69,7 @@ const notificationController = {
     try {
       const { days } = req.body;
       const result = await notificationService.updateSetting(Number(days));
-      sendResponse(res, 200, "Setting updated successfully", result);
+      sendResponse(res, 200, "Pengaturan berhasil diperbarui", result);
     } catch (error) {
       next(error);
     }
@@ -78,7 +78,7 @@ const notificationController = {
   getDays: async (req: Request, res: Response, next: NextFunction) => {
     try {
       const data = await notificationService.getSetting();
-      sendResponse(res, 200, "Setting fetched successfully", data);
+      sendResponse(res, 200, "Pengaturan berhasil diambil", data);
     } catch (error) {
       next(error);
     }

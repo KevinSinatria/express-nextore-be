@@ -8,7 +8,7 @@ const cashShiftService = {
         });
 
         if (activeShift) {
-            throw new CustomError(400, "You still have unclosed shifts.");
+            throw new CustomError(400, "Anda masih memiliki shift yang belum ditutup.");
         }
 
         const newShift = await prisma.cashShift.create({
@@ -37,7 +37,7 @@ const cashShiftService = {
             include: {user: {select: {name: true}}}
         });
 
-        if (!shift) throw new CustomError(404, "No active shift found");
+        if (!shift) throw new CustomError(404, "Shift aktif tidak ditemukan");
 
         const sales = await prisma.transaction.aggregate({
             where: {

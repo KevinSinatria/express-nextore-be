@@ -41,7 +41,7 @@ const userController = {
       sendResponse(
         res,
         200,
-        "Users fetched successfully",
+        "Pengguna berhasil diambil",
         result.data,
         result.meta,
       );
@@ -59,7 +59,7 @@ const userController = {
       const result = await userService.getUserById({
         id: req.params.id,
       });
-      sendResponse(res, 200, "User fetched successfuly", result);
+      sendResponse(res, 200, "Pengguna berhasil diambil", result);
     } catch (error) {
       next(error);
     }
@@ -74,7 +74,7 @@ const userController = {
       const result = await userService.getUserByUsername({
         username: req.params.username,
       });
-      sendResponse(res, 200, "User fetched successfuly", result);
+      sendResponse(res, 200, "Pengguna berhasil diambil", result);
     } catch (error) {
       next(error);
     }
@@ -87,7 +87,7 @@ const userController = {
   ) => {
     try {
       const result = await userService.createUser({ data: req.body });
-      sendResponse(res, 200, "User fetched successfully", result);
+      sendResponse(res, 200, "Pengguna berhasil diambil", result);
     } catch (error) {
       next(error);
     }
@@ -103,7 +103,7 @@ const userController = {
         id: req.params.id,
         data: req.body,
       });
-      sendResponse(res, 200, "User updated successfully", result);
+      sendResponse(res, 200, "Pengguna berhasil diperbarui", result);
     } catch (error) {
       next(error);
     }
@@ -116,7 +116,7 @@ const userController = {
   ) => {
     try {
       await userService.deleteUser({ id: req.params.id });
-      sendResponse(res, 200, "User deleted successfully");
+      sendResponse(res, 200, "Pengguna berhasil dihapus");
     } catch (error) {
       next(error);
     }

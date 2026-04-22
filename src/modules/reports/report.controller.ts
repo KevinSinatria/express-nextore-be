@@ -28,7 +28,7 @@ const reportController = {
   getSalesAnalytics: async (req: GetSalesAnalyticsRequest, res: Response, next: NextFunction) => {
     try {
       const result = await reportService.getSalesAnalytics({ query: req.query });
-      sendResponse(res, 200, "Sales analytics fetched successfully", result);
+      sendResponse(res, 200, "Analitik penjualan berhasil diambil", result);
     } catch (error) {
       next(error);
     }
@@ -60,7 +60,7 @@ const reportController = {
         return;
       }
 
-      sendResponse(res, 200, "Sales audit trail fetched successfully", result.data, result.meta ?? undefined);
+      sendResponse(res, 200, "Jejak audit penjualan berhasil diambil", result.data, result.meta ?? undefined);
     } catch (error) {
       next(error);
     }
@@ -89,7 +89,7 @@ const reportController = {
         return;
       }
 
-      sendResponse(res, 200, "Inventory expiry alert fetched successfully", result.data, result.meta ?? undefined);
+      sendResponse(res, 200, "Peringatan kedaluwarsa stok berhasil diambil", result.data, result.meta ?? undefined);
     } catch (error) {
       next(error);
     }

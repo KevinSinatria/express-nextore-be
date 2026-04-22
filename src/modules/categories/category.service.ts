@@ -78,7 +78,7 @@ const categoryService = {
     } catch (err) {
       if (err instanceof Prisma.PrismaClientKnownRequestError) {
         if (err.code === "P2025") {
-          throw new CustomError(404, `Category with ID ${id} not found.`);
+          throw new CustomError(404, `Kategori dengan ID ${id} tidak ditemukan.`);
         }
       }
       throw err;
@@ -126,7 +126,7 @@ const categoryService = {
     } catch (err) {
       if (err instanceof Prisma.PrismaClientKnownRequestError) {
         if (err.code === "P2025") {
-          throw new CustomError(404, `Category with ID ${id} not found.`);
+          throw new CustomError(404, `Kategori dengan ID ${id} tidak ditemukan.`);
         }
       }
       throw err;
@@ -149,7 +149,7 @@ const categoryService = {
     } catch (err) {
       if (err instanceof Prisma.PrismaClientKnownRequestError) {
         if (err.code === "P2025") {
-          throw new CustomError(404, `Category with ID ${id} not found.`);
+          throw new CustomError(404, `Kategori dengan ID ${id} tidak ditemukan.`);
         }
       }
       throw err;

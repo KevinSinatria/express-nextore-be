@@ -29,7 +29,7 @@ const authService = {
     if (!user?.roles.includes(role)) {
       throw new CustomError(
         403,
-        "Forbidden: You don't have permission to access this role.",
+        "Dilarang: Anda tidak memiliki izin untuk mengakses peran ini.",
       );
     }
 
@@ -79,13 +79,13 @@ const authService = {
     });
 
     if (!pos) {
-      throw new CustomError(404, "POS Terminal not found.");
+      throw new CustomError(404, "Terminal POS tidak ditemukan.");
     }
 
     if (pos.isActive && pos.activeUserId !== userId) {
       throw new CustomError(
         400,
-        "This terminal is already in use by another user.",
+        "Terminal ini sedang digunakan oleh pengguna lain.",
       );
     }
 
@@ -127,13 +127,13 @@ const authService = {
     });
 
     if (!user) {
-      throw new CustomError(401, "Invalid username or password");
+      throw new CustomError(401, "Username atau password salah");
     }
 
     if (user.isSuspended) {
       throw new CustomError(
         403,
-        "Account is suspended. Please contact the administrator.",
+        "Akun telah disuspend/dinonaktifkan. Silakan hubungi administrator.",
       );
     }
 
@@ -145,7 +145,7 @@ const authService = {
     // });
 
     // if (activeSession) {
-    //   throw new CustomError(403, "Account is already logged on another device. Please logout First")
+    //   throw new CustomError(403, "Akun ini sudah masuk di perangkat lain. Silakan logout terlebih dahulu")
     // }
 
     // const session = await auth.api.signInUsername({
@@ -169,7 +169,7 @@ const authService = {
 
         return {
           success: true,
-          message: "Login successfully.",
+          message: "Berhasil login.",
           data: {
             requiresRoleSelection: false,
             availablePos,
@@ -179,7 +179,7 @@ const authService = {
       } else if (user.roles.length > 1) {
         return {
           success: true,
-          message: "Please select a role first.",
+          message: "Silakan pilih peran terlebih dahulu.",
           data: {
             requiresRoleSelection: true,
             availableRoles: user.roles,
@@ -190,7 +190,7 @@ const authService = {
       }
     }
 
-    throw new CustomError(403, "This account doesn't have any role.");
+    throw new CustomError(403, "Akun ini tidak memiliki peran akses.");
   },
 
   logout: async ({ headers, userId }: { headers: any; userId: string }) => {

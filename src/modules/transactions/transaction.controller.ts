@@ -43,7 +43,7 @@ const transactionController = {
       sendResponse(
         res,
         200,
-        "Transactions fetched successfully",
+        "Transaksi berhasil diambil",
         result.data,
         result.meta,
       );
@@ -60,7 +60,7 @@ const transactionController = {
       const result = await transactionService.getTransactionById({
         id: req.params.id,
       });
-      sendResponse(res, 200, "Transaction fetched successfully", result);
+      sendResponse(res, 200, "Transaksi berhasil diambil", result);
     } catch (error) {
       next(error);
     }
@@ -77,7 +77,7 @@ const transactionController = {
       const activeShiftId = session?.activeShiftId;
 
       if (!activeShiftId) {
-        return sendResponse(res, 400, "Transaction cannot be created because there is no active shift", null);
+        return sendResponse(res, 400, "Transaksi tidak dapat dibuat karena tidak ada shift aktif", null);
       }
 
       const result = await transactionService.createTransaction({
@@ -87,7 +87,7 @@ const transactionController = {
         ...(posId && { posId }),
       });
 
-      sendResponse(res, 201, "Transaction created successfully", result);
+      sendResponse(res, 201, "Transaksi berhasil dibuat", result);
     } catch (error) {
       next(error);
     }
@@ -103,7 +103,7 @@ const transactionController = {
         id: req.params.id,
         userIdAsli: userIdAsli,
       });
-      sendResponse(res, 200, "Transaction cancelled successfully", result);
+      sendResponse(res, 200, "Transaksi berhasil dibatalkan", result);
     } catch (error) {
       next(error);
     }
@@ -123,7 +123,7 @@ const transactionController = {
       sendResponse(
         res,
         200,
-        "Pending transaction updated successfully",
+        "Transaksi yang tertunda berhasil diperbarui",
         result,
       );
     } catch (error) {
