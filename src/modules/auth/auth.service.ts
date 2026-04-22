@@ -45,18 +45,18 @@ const authService = {
     const needsPos = ["CASHIER", "SUPREVISOR"];
     let availablePos: any[] = [];
 
-    if(needsPos.includes(role)) {
-     availablePos = await prisma.pos.findMany({
-      select: {
-        id: true,
-        name: true,
-        location: true,
-        isActive: true,
-        activeUser: {
-          select: {name: true}
-        }
-      }
-    });
+    if (needsPos.includes(role)) {
+      availablePos = await prisma.pos.findMany({
+        select: {
+          id: true,
+          name: true,
+          location: true,
+          isActive: true,
+          activeUser: {
+            select: { name: true },
+          },
+        },
+      });
     }
 
     return {
@@ -75,7 +75,7 @@ const authService = {
     token: string;
   }) => {
     const pos = await prisma.pos.findUnique({
-      where: {id: posId},
+      where: { id: posId },
     });
 
     if (!pos) {
@@ -83,11 +83,14 @@ const authService = {
     }
 
     if (pos.isActive && pos.activeUserId !== userId) {
-      throw new CustomError(400, "This terminal is already in use by another user.");
+      throw new CustomError(
+        400,
+        "This terminal is already in use by another user.",
+      );
     }
 
     await prisma.pos.update({
-      where: {id: posId},
+      where: { id: posId },
       data: {
         isActive: true,
         activeUserId: userId,
@@ -95,7 +98,7 @@ const authService = {
     });
 
     await prisma.session.update({
-      where: {token: token},
+      where: { token: token },
       data: {
         activePosId: posId,
       },
@@ -114,17 +117,24 @@ const authService = {
     headers,
   }: LoginParams["body"] & { headers: any }) => {
     const session = await auth.api.signInUsername({
-      body: {username, password},
+      body: { username, password },
       headers: fromNodeHeaders(headers),
       returnHeaders: true,
     });
 
     const user = await prisma.user.findUnique({
-      where: {username},
+      where: { username },
     });
 
     if (!user) {
       throw new CustomError(401, "Invalid username or password");
+    }
+
+    if (user.isSuspended) {
+      throw new CustomError(
+        403,
+        "Account is suspended. Please contact the administrator.",
+      );
     }
 
     // const activeSession = await prisma.session.findFirst({
@@ -183,19 +193,19 @@ const authService = {
     throw new CustomError(403, "This account doesn't have any role.");
   },
 
-  logout: async ({headers, userId}: {headers: any; userId:string}) => {
+  logout: async ({ headers, userId }: { headers: any; userId: string }) => {
     await prisma.pos.updateMany({
       where: {
         activeUserId: userId,
       },
       data: {
         isActive: false,
-        activeUserId: null
+        activeUserId: null,
       },
     });
 
     await auth.api.signOut({
-      headers: fromNodeHeaders(headers)
+      headers: fromNodeHeaders(headers),
     });
     return;
   },

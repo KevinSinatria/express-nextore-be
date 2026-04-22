@@ -30,6 +30,8 @@ const productService = {
 
     const where: Prisma.ProductWhereInput = {};
 
+    where.isBundle = false;
+
     if (search) {
       where.OR = [
         {

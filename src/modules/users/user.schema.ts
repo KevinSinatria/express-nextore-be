@@ -43,6 +43,7 @@ const createUserSchema = z.object({
         "Password must contain at least one lowercase letter, one uppercase letter, and one number",
       ),
     roles: z.array(z.enum(Role)),
+    isSuspended: z.boolean().optional().default(false),
   }),
 });
 
@@ -74,6 +75,7 @@ const updateUserSchema = z.object({
         "Password must contain at least one lowercase letter, one uppercase letter, and one number",
       )
       .optional(),
+    isSuspended: z.boolean().optional(),
   }),
 });
 

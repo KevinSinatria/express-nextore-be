@@ -77,6 +77,7 @@ const userService = {
       },
       data: {
         roles: data.roles,
+        isSuspended: data.isSuspended,
       },
     });
 
@@ -109,6 +110,10 @@ const userService = {
       if (data.username) {
         updateData.username = data.username;
         updateData.displayUsername = data.username;
+      }
+
+      if (data.isSuspended) {
+        updateData.isSuspended = data.isSuspended;
       }
 
       const updatedUser = await prisma.user.update({
