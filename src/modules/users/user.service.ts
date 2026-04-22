@@ -47,7 +47,8 @@ const userService = {
       where: { id },
       include: { accounts: true, sessions: true },
     });
-    if (!user) throw new CustomError(404, `Pengguna dengan ID ${id} tidak ditemukan`);
+    if (!user)
+      throw new CustomError(404, `Pengguna dengan ID ${id} tidak ditemukan`);
     return user;
   },
 
@@ -57,7 +58,10 @@ const userService = {
       include: { accounts: true, sessions: true },
     });
     if (!user)
-      throw new CustomError(404, `Pengguna dengan username ${username} tidak ditemukan`);
+      throw new CustomError(
+        404,
+        `Pengguna dengan username ${username} tidak ditemukan`,
+      );
     return user;
   },
 
@@ -112,20 +116,19 @@ const userService = {
         updateData.displayUsername = data.username;
       }
 
-      if (data.isSuspended) {
-        updateData.isSuspended = data.isSuspended;
-      }
-
       const updatedUser = await prisma.user.update({
         where: { id },
-        data: updateData,
+        data: { ...updateData, isSuspended: data.isSuspended },
       });
 
       return updatedUser;
     } catch (err) {
       if (err instanceof Prisma.PrismaClientKnownRequestError) {
         if (err.code === "P2025") {
-          throw new CustomError(404, `Pengguna dengan ID "${id}" tidak ditemukan`);
+          throw new CustomError(
+            404,
+            `Pengguna dengan ID "${id}" tidak ditemukan`,
+          );
         }
       }
       throw err;
