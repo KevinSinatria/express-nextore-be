@@ -25,24 +25,25 @@ const createUserSchema = z.object({
   body: z.object({
     name: z
       .string()
-      .min(1, "Name must be at least 1 character")
-      .max(20, "Name must be at most 20 characters"),
+      .min(1, "Nama minimal terdiri dari 1 karakter")
+      .max(20, "Nama maksimal 20 karakter"),
     username: z
       .string()
-      .min(1, "Username must be at least 1 character")
-      .max(20, "Username must be at most 20 characters")
+      .min(1, "Username minimal 1 karakter")
+      .max(20, "Username maksimal 20 karakter")
       .regex(
         /^[a-zA-Z0-9_]{1,20}$/,
-        "Username must be at least 1 characters long and contain only letters, numbers, and underscores",
+        "Username minimal 1 karakter dan hanya boleh berisi huruf, angka, dan garis bawah",
       ),
     password: z
       .string()
-      .min(8, "Password must be at least 8 characters")
+      .min(8, "Password minimal 8 karakter")
       .regex(
         /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/,
-        "Password must contain at least one lowercase letter, one uppercase letter, and one number",
+        "Password harus berisi huruf kecil, huruf besar, dan angka",
       ),
     roles: z.array(z.enum(Role)),
+    isSuspended: z.boolean().optional().default(false),
   }),
 });
 
@@ -53,27 +54,28 @@ const updateUserSchema = z.object({
   body: z.object({
     name: z
       .string()
-      .min(1, "Name must be at least 1 character")
-      .max(20, "Name must be at most 20 characters")
+      .min(1, "Nama minimal terdiri dari 1 karakter")
+      .max(20, "Nama maksimal 20 karakter")
       .optional(),
     username: z
       .string()
-      .min(1, "Username must be at least 1 character")
-      .max(20, "Username must be at most 20 characters")
+      .min(1, "Username minimal 1 karakter")
+      .max(20, "Username maksimal 20 karakter")
       .regex(
         /^[a-zA-Z0-9_]{1,20}$/,
-        "Username must be at least 1 characters long and contain only letters, numbers, and underscores",
+        "Username minimal 1 karakter dan hanya boleh berisi huruf, angka, dan garis bawah",
       )
       .optional(),
     roles: z.array(z.enum(Role)).optional(),
     password: z
       .string()
-      .min(8, "Password must be at least 8 characters")
+      .min(8, "Password minimal 8 karakter")
       .regex(
         /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/,
-        "Password must contain at least one lowercase letter, one uppercase letter, and one number",
+        "Password harus berisi huruf kecil, huruf besar, dan angka",
       )
       .optional(),
+    isSuspended: z.boolean().optional(),
   }),
 });
 

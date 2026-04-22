@@ -42,7 +42,7 @@ const stockBatchController = {
       sendResponse(
         res,
         200,
-        "Stock batches fetched successfully",
+        "Batch stok berhasil diambil",
         result.data,
         result.meta,
       );
@@ -60,7 +60,7 @@ const stockBatchController = {
       const result = await stockBatchService.getStockBatchById({
         id: req.params.id,
       });
-      sendResponse(res, 200, "Stock batch fetched successfully", result);
+      sendResponse(res, 200, "Batch stok berhasil diambil", result);
     } catch (error) {
       next(error);
     }
@@ -75,7 +75,7 @@ const stockBatchController = {
       const result = await stockBatchService.getStockBatchesByProductId({
         productId: req.params.productId,
       });
-      sendResponse(res, 200, "Stock batches fetched successfully", result);
+      sendResponse(res, 200, "Batch stok berhasil diambil", result);
     } catch (error) {
       next(error);
     }
@@ -90,7 +90,7 @@ const stockBatchController = {
       const result = await stockBatchService.createStockBatch({
         data: req.body,
       });
-      sendResponse(res, 201, "Stock batch created successfully", result);
+      sendResponse(res, 201, "Batch stok berhasil dibuat", result);
     } catch (error) {
       next(error);
     }
@@ -106,7 +106,7 @@ const stockBatchController = {
         id: req.params.id,
         data: req.body,
       });
-      sendResponse(res, 200, "Stock batch updated successfully", result);
+      sendResponse(res, 200, "Batch stok berhasil diperbarui", result);
     } catch (error) {
       next(error);
     }
@@ -121,7 +121,7 @@ const stockBatchController = {
       const result = await stockBatchService.deleteStockBatch({
         id: req.params.id,
       });
-      sendResponse(res, 200, "Stock batch deleted successfully", result);
+      sendResponse(res, 200, "Batch stok berhasil dihapus", result);
     } catch (error) {
       next(error);
     }

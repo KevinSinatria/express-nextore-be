@@ -9,8 +9,8 @@ const selectRoleSchema = z.object({
 
 const selectPosSchema = z.object({
   body: z.object({
-    posId: z.string().min(1, "POS ID is required"),
-    startingCash: z.number().min(0, "Starting cash must be non-negative").optional(),
+    posId: z.string().min(1, "ID POS wajib diisi"),
+    startingCash: z.number().min(0, "Kas awal tidak boleh bernilai negatif").optional(),
   }),
 });
 
@@ -23,7 +23,7 @@ const loginSchema = z.object({
 
 const logoutSchema = z.object({
   body: z.object({
-    actualCash: z.number().min(0, "Actual cash must be non-negative").optional(),
+    actualCash: z.number().min(0, "Kas tunai tidak boleh bernilai negatif").optional(),
   })
 })
 

@@ -29,7 +29,7 @@ const authService = {
     if (!user?.roles.includes(role)) {
       throw new CustomError(
         403,
-        "Forbidden: You don't have permission to access this role.",
+        "Dilarang: Anda tidak memiliki izin untuk mengakses peran ini.",
       );
     }
 
@@ -45,18 +45,18 @@ const authService = {
     const needsPos = ["CASHIER", "SUPREVISOR"];
     let availablePos: any[] = [];
 
-    if(needsPos.includes(role)) {
-     availablePos = await prisma.pos.findMany({
-      select: {
-        id: true,
-        name: true,
-        location: true,
-        isActive: true,
-        activeUser: {
-          select: {name: true}
-        }
-      }
-    });
+    if (needsPos.includes(role)) {
+      availablePos = await prisma.pos.findMany({
+        select: {
+          id: true,
+          name: true,
+          location: true,
+          isActive: true,
+          activeUser: {
+            select: { name: true },
+          },
+        },
+      });
     }
 
     return {
@@ -75,19 +75,22 @@ const authService = {
     token: string;
   }) => {
     const pos = await prisma.pos.findUnique({
-      where: {id: posId},
+      where: { id: posId },
     });
 
     if (!pos) {
-      throw new CustomError(404, "POS Terminal not found.");
+      throw new CustomError(404, "Terminal POS tidak ditemukan.");
     }
 
     if (pos.isActive && pos.activeUserId !== userId) {
-      throw new CustomError(400, "This terminal is already in use by another user.");
+      throw new CustomError(
+        400,
+        "Terminal ini sedang digunakan oleh pengguna lain.",
+      );
     }
 
     await prisma.pos.update({
-      where: {id: posId},
+      where: { id: posId },
       data: {
         isActive: true,
         activeUserId: userId,
@@ -95,7 +98,7 @@ const authService = {
     });
 
     await prisma.session.update({
-      where: {token: token},
+      where: { token: token },
       data: {
         activePosId: posId,
       },
@@ -114,17 +117,24 @@ const authService = {
     headers,
   }: LoginParams["body"] & { headers: any }) => {
     const session = await auth.api.signInUsername({
-      body: {username, password},
+      body: { username, password },
       headers: fromNodeHeaders(headers),
       returnHeaders: true,
     });
 
     const user = await prisma.user.findUnique({
-      where: {username},
+      where: { username },
     });
 
     if (!user) {
-      throw new CustomError(401, "Invalid username or password");
+      throw new CustomError(401, "Username atau password salah");
+    }
+
+    if (user.isSuspended) {
+      throw new CustomError(
+        403,
+        "Akun telah disuspend/dinonaktifkan. Silakan hubungi administrator.",
+      );
     }
 
     // const activeSession = await prisma.session.findFirst({
@@ -135,7 +145,7 @@ const authService = {
     // });
 
     // if (activeSession) {
-    //   throw new CustomError(403, "Account is already logged on another device. Please logout First")
+    //   throw new CustomError(403, "Akun ini sudah masuk di perangkat lain. Silakan logout terlebih dahulu")
     // }
 
     // const session = await auth.api.signInUsername({
@@ -159,7 +169,7 @@ const authService = {
 
         return {
           success: true,
-          message: "Login successfully.",
+          message: "Berhasil login.",
           data: {
             requiresRoleSelection: false,
             availablePos,
@@ -169,7 +179,7 @@ const authService = {
       } else if (user.roles.length > 1) {
         return {
           success: true,
-          message: "Please select a role first.",
+          message: "Silakan pilih peran terlebih dahulu.",
           data: {
             requiresRoleSelection: true,
             availableRoles: user.roles,
@@ -180,22 +190,22 @@ const authService = {
       }
     }
 
-    throw new CustomError(403, "This account doesn't have any role.");
+    throw new CustomError(403, "Akun ini tidak memiliki peran akses.");
   },
 
-  logout: async ({headers, userId}: {headers: any; userId:string}) => {
+  logout: async ({ headers, userId }: { headers: any; userId: string }) => {
     await prisma.pos.updateMany({
       where: {
         activeUserId: userId,
       },
       data: {
         isActive: false,
-        activeUserId: null
+        activeUserId: null,
       },
     });
 
     await auth.api.signOut({
-      headers: fromNodeHeaders(headers)
+      headers: fromNodeHeaders(headers),
     });
     return;
   },

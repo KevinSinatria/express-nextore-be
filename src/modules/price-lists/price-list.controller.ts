@@ -39,7 +39,7 @@ const priceListController = {
   ) => {
     try {
       const data = await priceListService.create(req.body);
-      sendResponse(res, 201, "Price list created successfully", data);
+      sendResponse(res, 201, "Daftar harga berhasil dibuat", data);
     } catch (error) {
       next(error);
     }
@@ -54,7 +54,7 @@ const priceListController = {
       const { data, meta } = await priceListService.getAll({
         query: req.query,
       });
-      sendResponse(res, 200, "Price lists fetched successfully", data, meta);
+      sendResponse(res, 200, "Daftar harga berhasil diambil", data, meta);
     } catch (error) {
       next(error);
     }
@@ -64,12 +64,12 @@ const priceListController = {
     try {
       const data = await priceListService.getActive();
       if (!data) {
-        sendResponse(res, 404, "Active price list not found", {
+        sendResponse(res, 404, "Daftar harga aktif tidak ditemukan", {
           isDefault: true,
         });
         return;
       }
-      sendResponse(res, 200, "Active price list fetched successfully", data);
+      sendResponse(res, 200, "Daftar harga aktif berhasil diambil", data);
     } catch (error) {
       next(error);
     }
@@ -84,10 +84,10 @@ const priceListController = {
       const { id } = req.params;
       const data = await priceListService.getById(id);
       if (!data) {
-        sendResponse(res, 404, "Price list not found");
+        sendResponse(res, 404, "Daftar harga tidak ditemukan");
         return;
       }
-      sendResponse(res, 200, "Price list detail fetched successfully", data);
+      sendResponse(res, 200, "Detail daftar harga berhasil diambil", data);
     } catch (error) {
       next(error);
     }
@@ -101,7 +101,7 @@ const priceListController = {
     try {
       const { id } = req.params;
       const data = await priceListService.update(id, req.body);
-      sendResponse(res, 200, "Price list updated successfully", data);
+      sendResponse(res, 200, "Daftar harga berhasil diperbarui", data);
     } catch (error) {
       next(error);
     }
@@ -115,7 +115,7 @@ const priceListController = {
     try {
       const { id } = req.params;
       await priceListService.delete(id);
-      sendResponse(res, 200, "Price list deleted successfully");
+      sendResponse(res, 200, "Daftar harga berhasil dihapus");
     } catch (error) {
       next(error);
     }
@@ -132,7 +132,7 @@ const priceListController = {
       sendResponse(
         res,
         200,
-        "Price list activated successfully, overriding default prices",
+        "Daftar harga berhasil diaktifkan, menimpa harga default",
         data,
       );
     } catch (error) {

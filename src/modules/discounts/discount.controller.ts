@@ -36,7 +36,7 @@ const discountController = {
       sendResponse(
         res,
         200,
-        "Discounts fetched successfully",
+        "Diskon berhasil diambil",
         result.data,
         result.meta,
       );
@@ -53,7 +53,7 @@ const discountController = {
       const result = await discountService.getDiscountById({
         id: req.params.id,
       });
-      sendResponse(res, 200, "Discount fetched successfully", result);
+      sendResponse(res, 200, "Diskon berhasil diambil", result);
     } catch (error) {
       next(error);
     }
@@ -67,7 +67,7 @@ const discountController = {
       const result = await discountService.createDiscount({
         data: req.body,
       });
-      sendResponse(res, 201, "Discount created successfully", result);
+      sendResponse(res, 201, "Diskon berhasil dibuat", result);
     } catch (error) {
       next(error);
     }
@@ -82,7 +82,7 @@ const discountController = {
         id: req.params.id,
         data: req.body,
       });
-      sendResponse(res, 200, "Discount updated successfully", result);
+      sendResponse(res, 200, "Diskon berhasil diperbarui", result);
     } catch (error) {
       next(error);
     }

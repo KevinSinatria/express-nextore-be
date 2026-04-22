@@ -47,6 +47,7 @@ model User {
   sessions        Session[]
   accounts        Account[]
   lastActive      DateTime?
+  isSuspended     Boolean   @default(false)
 
   transactions          Transaction[]
   createdAt             DateTime              @default(now())

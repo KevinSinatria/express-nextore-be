@@ -37,7 +37,7 @@ const createTransactionSchema = z.object({
       if (data.status === "PENDING" && !data.customerName) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
-          message: "customerName is required when status is PENDING",
+          message: "Nama pelanggan wajib diisi saat status PENDING",
           path: ["customerName"],
         });
       }
@@ -45,7 +45,7 @@ const createTransactionSchema = z.object({
       if (data.paymentMethod === "CASH" && !data.cashReceived) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
-          message: "cashReceived is required when paymentMethod is CASH",
+          message: "Kas diterima wajib diisi jika metode pembayaran CASH",
           path: ["cashReceived"],
         });
       }
@@ -83,7 +83,7 @@ const updatePendingTransactionSchema = z.object({
       if (data.status === "PENDING" && !data.customerName) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
-          message: "customerName is required when status is PENDING",
+          message: "Nama pelanggan wajib diisi saat status PENDING",
           path: ["customerName"],
         });
       }
@@ -91,7 +91,7 @@ const updatePendingTransactionSchema = z.object({
       if (data.paymentMethod === "CASH" && !data.cashReceived) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
-          message: "cashReceived is required when paymentMethod is CASH",
+          message: "Kas diterima wajib diisi jika metode pembayaran CASH",
           path: ["cashReceived"],
         });
       }

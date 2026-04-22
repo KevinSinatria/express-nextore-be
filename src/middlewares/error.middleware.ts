@@ -24,7 +24,7 @@ export const errorHandler = (
   if (err instanceof ZodError) {
     return res.status(400).json({
       success: false,
-      message: "Validation error",
+      message: "Kesalahan validasi",
       errors: err.issues.map((issue) => ({
         path: issue.path[issue.path.length - 1],
         message: issue.message,
@@ -42,7 +42,7 @@ export const errorHandler = (
   if (err instanceof MulterError) {
     return res.status(400).json({
       success: false,
-      message: "File too large",
+      message: "Ukuran file terlalu besar",
     });
   }
 
@@ -50,7 +50,7 @@ export const errorHandler = (
   if (err instanceof PrismaClientKnownRequestError && err.code === "P2025") {
     return res.status(404).json({
       success: false,
-      message: "Resource not found",
+      message: "Sumber daya tidak ditemukan",
     });
   }
 
@@ -82,7 +82,7 @@ export const errorHandler = (
 
     return res.status(409).json({
       success: false,
-      message: `Conflict: ${cleanName} already exists.`,
+      message: `Konflik: ${cleanName} sudah digunakan/ada.`,
     });
   }
 
@@ -91,7 +91,7 @@ export const errorHandler = (
     return res.status(409).json({
       success: false,
       message:
-        "Cannot delete or modify record because it is currently referenced by other records (Foreign Key Constraint Warning).",
+        "Tidak dapat menghapus atau mengubah data karena sedang digunakan oleh data lain (Peringatan Constraint Foreign Key).",
     });
   }
 
@@ -100,12 +100,12 @@ export const errorHandler = (
     return res.status(409).json({
       success: false,
       message:
-        "The change you are trying to make would violate the required relation between models.",
+        "Perubahan yang Anda coba lakukan melanggar relasi antar data yang diwajibkan.",
     });
   }
 
   return res.status(500).json({
     success: false,
-    message: "Internal server error",
+    message: "Kesalahan internal server",
   });
 };

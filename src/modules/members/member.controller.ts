@@ -42,7 +42,7 @@ const memberController = {
       sendResponse(
         res,
         200,
-        "Members fteched successfully",
+        "Member berhasil diambil",
         result.data,
         result.meta,
       );
@@ -63,7 +63,7 @@ const memberController = {
       sendResponse(
         res,
         200,
-        `Member with ID ${req.params.id} fetched successfully`,
+        `Member dengan ID ${req.params.id} berhasil diambil`,
         result,
       );
     } catch (error) {
@@ -83,7 +83,7 @@ const memberController = {
       sendResponse(
         res,
         201,
-        `Member with ID ${result.id} created successfully`,
+        `Member dengan ID ${result.id} berhasil dibuat`,
         result,
       );
     } catch (error) {
@@ -104,7 +104,7 @@ const memberController = {
       sendResponse(
         res,
         200,
-        `Member with ID ${req.params.id} updated successfully`,
+        `Member dengan ID ${req.params.id} berhasil diperbarui`,
         result,
       );
     } catch (error) {
@@ -135,7 +135,7 @@ const memberController = {
       sendResponse(
         res,
         200,
-        `Member with ID ${req.params.id} deleted successfully`,
+        `Member dengan ID ${req.params.id} berhasil dihapus`,
         result,
       );
     } catch (error) {

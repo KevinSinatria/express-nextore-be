@@ -39,7 +39,7 @@ const productController = {
       sendResponse(
         res,
         200,
-        "Products fetched successfully",
+        "Produk berhasil diambil",
         result.data,
         result.meta,
       );
@@ -56,7 +56,7 @@ const productController = {
       const result = await productService.getProductById({
         id: req.params.id,
       });
-      sendResponse(res, 200, "Product fetched successfully", result);
+      sendResponse(res, 200, "Produk berhasil diambil", result);
     } catch (error) {
       next(error);
     }
@@ -72,7 +72,7 @@ const productController = {
         files: req.files as Express.Multer.File[] | undefined,
       });
 
-      sendResponse(res, 200, "Product created successfully", result);
+      sendResponse(res, 200, "Produk berhasil dibuat", result);
     } catch (error) {
       next(error);
     }
@@ -90,7 +90,7 @@ const productController = {
         files: req.files as Express.Multer.File[] | undefined,
         userId: user?.id,
       });
-      sendResponse(res, 200, "Product updated successfully", result);
+      sendResponse(res, 200, "Produk berhasil diperbarui", result);
     } catch (error) {
       next(error);
     }
@@ -104,7 +104,7 @@ const productController = {
       const result = await productService.deleteProduct({
         id: req.params.id,
       });
-      sendResponse(res, 200, "Product deleted successfully", result);
+      sendResponse(res, 200, "Produk berhasil dihapus", result);
     } catch (error) {
       next(error);
     }
@@ -113,7 +113,7 @@ const productController = {
     try {
       const query = req.query as { search?: string };
       const result = await productService.alertLowStock({ query });
-      sendResponse(res, 200, "Low stock products fetched successfully", result);
+      sendResponse(res, 200, "Produk dengan stok sedikit berhasil diambil", result);
     } catch (error) {
       next(error);
     }
@@ -131,7 +131,7 @@ const productController = {
       sendResponse(
         res,
         200,
-        "Product price histories fetched successfully",
+        "Riwayat harga produk berhasil diambil",
         result,
       );
     } catch (error) {

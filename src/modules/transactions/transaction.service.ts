@@ -148,7 +148,7 @@ const transactionService = {
     } catch (err) {
       if (err instanceof Prisma.PrismaClientKnownRequestError) {
         if (err.code === "P2025") {
-          throw new CustomError(404, `Transaction with ID ${id} not found.`);
+          throw new CustomError(404, `Transaksi dengan ID ${id} tidak ditemukan.`);
         }
       }
       throw err;
@@ -183,7 +183,7 @@ const transactionService = {
       });
 
       if (!activeShift) {
-        throw new CustomError(404, "Active shift not found. you has been open a shift");
+        throw new CustomError(404, "Shift aktif tidak ditemukan. Anda harus membuka shift terlebih dahulu");
       }
     })
 
@@ -191,7 +191,7 @@ const transactionService = {
     if (status === "PENDING" && (!customerName || customerName.trim() === "")) {
       throw new CustomError(
         400,
-        "Customer name is required when status is PENDING",
+        "Nama pelanggan wajib diisi saat status PENDING",
       );
     }
 
@@ -213,7 +213,7 @@ const transactionService = {
           if (member.isActive === false) {
             throw new CustomError(
               400,
-              `Member "${member.name}" is currently inactive and cannot be used for transactions.`,
+              `Member "${member.name}" sedang tidak aktif dan tidak dapat digunakan untuk transaksi.`,
             );
           }
         } catch (err) {
@@ -221,7 +221,7 @@ const transactionService = {
             err instanceof Prisma.PrismaClientKnownRequestError &&
             err.code === "P2025"
           ) {
-            throw new CustomError(404, `Member with ID ${memberId} not found.`);
+            throw new CustomError(404, `Member dengan ID ${memberId} tidak ditemukan.`);
           }
           throw err;
         }
@@ -302,7 +302,7 @@ const transactionService = {
           if (products.length === 0) {
             throw new CustomError(
               404,
-              `Product with ID ${item.productId} not found.`,
+              `Produk dengan ID ${item.productId} tidak ditemukan.`,
             );
           }
           product = products[0];
@@ -333,7 +333,7 @@ const transactionService = {
             if (components.length === 0) {
               throw new CustomError(
                 404,
-                `Component Product with ID ${component.componentId} not found.`,
+                `Produk Komponen dengan ID ${component.componentId} tidak ditemukan.`,
               );
             }
             const compProduct = components[0];
@@ -423,7 +423,7 @@ const transactionService = {
       const change = cashReceived ? cashReceived - totalNet : 0;
 
       if (paymentMethod === "CASH" && change < 0) {
-        throw new CustomError(400, "Insufficient cash received.");
+        throw new CustomError(400, "Uang tunai yang diterima tidak cukup.");
       }
 
       const transaction = await tx.transaction.create({
@@ -497,7 +497,7 @@ const transactionService = {
         });
 
         if (!transaction) {
-          throw new CustomError(404, `Transaction with ID ${id} not found.`);
+          throw new CustomError(404, `Transaksi dengan ID ${id} tidak ditemukan.`);
         }
 
         if (transaction.status === "CANCELLED") {
@@ -563,7 +563,7 @@ const transactionService = {
     } catch (err) {
       if (err instanceof Prisma.PrismaClientKnownRequestError) {
         if (err.code === "P2025") {
-          throw new CustomError(404, `Transaction with ID ${id} not found.`);
+          throw new CustomError(404, `Transaksi dengan ID ${id} tidak ditemukan.`);
         }
       }
       throw err;
@@ -594,12 +594,12 @@ const transactionService = {
       });
 
       if (!transaction)
-        throw new CustomError(404, `Transaction ${id} not found.`);
+        throw new CustomError(404, `Transaksi ${id} tidak ditemukan.`);
 
       const existingTransaction = transaction;
 
       if (transaction.status !== "PENDING") {
-        throw new CustomError(400, "Only PENDING transactions can be updated.");
+        throw new CustomError(400, "Hanya transaksi berstatus PENDING yang dapat diperbarui.");
       }
 
       // Revert all original items
@@ -636,11 +636,11 @@ const transactionService = {
       if (finalMemberId) {
         member = await tx.member.findUnique({ where: { id: finalMemberId } });
         if (!member)
-          throw new CustomError(404, `Member ${finalMemberId} not found.`);
+          throw new CustomError(404, `Member ${finalMemberId} tidak ditemukan.`);
       }
 
       if (member.isActive == false) {
-        throw new CustomError(400, `Member "${member.name}" is inactive.`);
+        throw new CustomError(400, `Member ${member.name} sedang tidak aktif.`);
       }
 
       const activeDiscount = await tx.discount.findMany({
@@ -672,7 +672,7 @@ const transactionService = {
             if (compProduct.totalStock < neededQty)
               throw new CustomError(
                 400,
-                `Stock insufficient for bundle ${product.name}`,
+                `Stok tidak cukup untuk paket/bundle ${product.name}`,
               );
 
             await tx.product.update({
@@ -683,7 +683,7 @@ const transactionService = {
           }
         } else {
           if (product.totalStock < item.qty)
-            throw new CustomError(400, `Product ${product.name} out of stock.`);
+            throw new CustomError(400, `Produk ${product.name} kehabisan stok.`);
           await tx.product.update({
             where: { id: item.productId },
             data: { totalStock: { decrement: item.qty } },
@@ -748,7 +748,7 @@ const transactionService = {
       const change = data.cashReceived ? data.cashReceived - totalNet : 0;
 
       if (data.paymentMethod === "CASH" && change < 0) {
-        throw new CustomError(400, "Insufficient cash received.");
+        throw new CustomError(400, "Uang tunai yang diterima tidak cukup.");
       }
 
       const updated = await tx.transaction.update({

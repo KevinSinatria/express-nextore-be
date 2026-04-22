@@ -20,10 +20,10 @@ const posService = {
       if (err instanceof Prisma.PrismaClientKnownRequestError && err.code == "P2002") {
         const target = (err.meta?.target as string  []) || [];
         if (target.includes("name")) {
-          throw new CustomError(400, "POS name already exists");
+          throw new CustomError(400, "Nama POS sudah digunakan");
         }
         if (target.includes("deviceName")) {
-          throw new CustomError(400, "Device name already exists");
+          throw new CustomError(400, "Nama perangkat sudah digunakan");
         }
       }
       throw err;
@@ -63,7 +63,7 @@ const posService = {
       },
     });
     if (!pos) {
-      throw new CustomError(404, "POS Terminal not found");
+      throw new CustomError(404, "Terminal POS tidak ditemukan");
     }
 
     return pos;
@@ -71,7 +71,7 @@ const posService = {
 
 updatePos: async (id: string, data:UpdatePosBody) => {
   const existingPos = await prisma.pos.findUnique({ where: {id} });
-  if (!existingPos) throw new CustomError(404, "POS terminal not found");
+  if (!existingPos) throw new CustomError(404, "Terminal POS tidak ditemukan");
  
     try {
       const updateData: any = {};
@@ -89,10 +89,10 @@ updatePos: async (id: string, data:UpdatePosBody) => {
       if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2002") {
         const target = (err.meta?.target as      string[]) || [];
         if (target.includes("name")) {
-          throw new CustomError(400, "POS name already exists");
+          throw new CustomError(400, "Nama POS sudah digunakan");
         }
         if (target.includes("deviceName")) {
-          throw new CustomError(400, "Device name already exists");
+          throw new CustomError(400, "Nama perangkat sudah digunakan");
         }
       }
       throw err;
@@ -101,10 +101,10 @@ updatePos: async (id: string, data:UpdatePosBody) => {
 
   deletePos: async (id: string) => {
     const existingPos = await prisma.pos.findUnique({where: {id}});
-    if (!existingPos) throw new CustomError(404, "POS terminal not found");
+    if (!existingPos) throw new CustomError(404, "Terminal POS tidak ditemukan");
 
     if (existingPos.isActive) {
-      throw new CustomError(400, "Cannot delete a  POS terminal that is currently active/in use");
+      throw new CustomError(400, "Tidak dapat menghapus terminal POS yang sedang aktif/digunakan");
     }
 
     return await prisma.pos.delete({where: {id}});

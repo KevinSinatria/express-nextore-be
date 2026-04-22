@@ -96,7 +96,7 @@ const stockBatchService = {
     });
 
     if (!batch) {
-      throw new CustomError(404, `Stock batch with ID ${id} not found.`);
+      throw new CustomError(404, `Batch stok dengan ID ${id} tidak ditemukan.`);
     }
 
     return batch;
@@ -118,7 +118,7 @@ const stockBatchService = {
     if (batches.length === 0) {
       throw new CustomError(
         404,
-        `Stock batches for product with ID ${productId} not found.`,
+        `Batch stok untuk produk dengan ID ${productId} tidak ditemukan.`,
       );
     }
 
@@ -138,7 +138,7 @@ const stockBatchService = {
     });
 
     if (!product) {
-      throw new CustomError(404, `Product with ID ${productId} not found.`);
+      throw new CustomError(404, `Produk dengan ID ${productId} tidak ditemukan.`);
     }
 
     if (product.category?.hasExpiry && !expiryDate) {
@@ -203,7 +203,7 @@ const stockBatchService = {
     });
 
     if (!existingBatch) {
-      throw new CustomError(404, `Stock batch with ID ${id} not found.`);
+      throw new CustomError(404, `Batch stok dengan ID ${id} tidak ditemukan.`);
     }
 
     const hasSale =
@@ -217,7 +217,7 @@ const stockBatchService = {
         if (hasSale) {
           throw new CustomError(
             400,
-            "Cannot update purchase price of a batch that has been partially sold.",
+            "Tidak dapat memperbarui harga beli dari batch stok yang sudah terjual sebagian.",
           );
         }
 
@@ -244,7 +244,7 @@ const stockBatchService = {
         if (hasSale) {
           throw new CustomError(
             400,
-            "Cannot update data of a batch that has been partially sold.",
+            "Tidak dapat memperbarui data dari batch stok yang sudah terjual sebagian.",
           );
         }
       }
@@ -277,13 +277,13 @@ const stockBatchService = {
     });
 
     if (!existingBatch) {
-      throw new CustomError(404, `Stock batch with ID ${id} not found.`);
+      throw new CustomError(404, `Batch stok dengan ID ${id} tidak ditemukan.`);
     }
 
     if (existingBatch.remainingQuantity < existingBatch.initialQuantity) {
       throw new CustomError(
         400,
-        "Cannot delete a batch that has been partially sold.",
+        "Tidak dapat menghapus batch stok yang sudah terjual sebagian.",
       );
     }
 

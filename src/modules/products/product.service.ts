@@ -30,6 +30,8 @@ const productService = {
 
     const where: Prisma.ProductWhereInput = {};
 
+    where.isBundle = false;
+
     if (search) {
       where.OR = [
         {
@@ -154,7 +156,7 @@ const productService = {
     } catch (err) {
       if (err instanceof Prisma.PrismaClientKnownRequestError) {
         if (err.code === "P2025") {
-          throw new CustomError(404, `Product with ID ${id} not found.`);
+          throw new CustomError(404, `Produk dengan ID ${id} tidak ditemukan.`);
         }
       }
       throw err;
@@ -182,7 +184,7 @@ const productService = {
       });
 
       if (!category) {
-        throw new CustomError(404, `Category with ID ${categoryId} not found.`);
+        throw new CustomError(404, `Kategori dengan ID ${categoryId} tidak ditemukan.`);
       }
 
       if (files && files.length > 0) {
@@ -239,7 +241,7 @@ const productService = {
       });
 
       if (!category) {
-        throw new CustomError(404, `Category with ID ${categoryId} not found.`);
+        throw new CustomError(404, `Kategori dengan ID ${categoryId} tidak ditemukan.`);
       }
 
       const existingProduct = await prisma.product.findUnique({
@@ -290,7 +292,7 @@ const productService = {
     } catch (err) {
       if (err instanceof Prisma.PrismaClientKnownRequestError) {
         if (err.code === "P2025") {
-          throw new CustomError(404, `Product with ID ${id} not found.`);
+          throw new CustomError(404, `Produk dengan ID ${id} tidak ditemukan.`);
         }
       }
 
@@ -323,7 +325,7 @@ const productService = {
     } catch (err) {
       if (err instanceof Prisma.PrismaClientKnownRequestError) {
         if (err.code === "P2025") {
-          throw new CustomError(404, `Product with ID ${id} not found.`);
+          throw new CustomError(404, `Produk dengan ID ${id} tidak ditemukan.`);
         }
       }
       throw err;
@@ -393,7 +395,7 @@ const productService = {
     } catch (err) {
       if (err instanceof Prisma.PrismaClientKnownRequestError) {
         if (err.code === "P2025") {
-          throw new CustomError(404, `Product with ID ${id} not found.`);
+          throw new CustomError(404, `Produk dengan ID ${id} tidak ditemukan.`);
         }
       }
       throw err;

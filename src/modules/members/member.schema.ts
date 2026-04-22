@@ -16,9 +16,9 @@ const getMemberByIdSchema = z.object({
 
 const createMemberSchema = z.object({
   body: z.object({
-    name: z.string().min(1, "Name must be at least 1 character"),
+    name: z.string().min(1, "Nama minimal terdiri dari 1 karakter"),
     phone: z
-      .number("Phone number must be a number")
+      .number("Nomor telepon harus berupa angka")
       .min(8, "Phone number minimum 8 digits")
       .optional()
       .nullable(),
@@ -33,7 +33,7 @@ const updateMemberSchema = z.object({
   body: z.object({
     name: z.string().min(1).optional(),
     phone: z
-      .number("Phone number must be a number")
+      .number("Nomor telepon harus berupa angka")
       .min(8, "Phone number minimum 8 digits")
       .optional()
       .nullable(),

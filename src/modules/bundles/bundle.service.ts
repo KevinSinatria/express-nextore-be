@@ -97,14 +97,14 @@ const bundleService = {
       });
 
       if (!bundle) {
-        throw new CustomError(404, `Bundle with ID ${id} not found.`);
+        throw new CustomError(404, `Paket (Bundle) dengan ID ${id} tidak ditemukan.`);
       }
 
       return bundle;
     } catch (err) {
       if (err instanceof Prisma.PrismaClientKnownRequestError) {
         if (err.code === "P2025") {
-          throw new CustomError(404, `Bundle with ID ${id} not found.`);
+          throw new CustomError(404, `Paket (Bundle) dengan ID ${id} tidak ditemukan.`);
         }
       }
       throw err;
@@ -133,7 +133,7 @@ const bundleService = {
         (c) => c.id === component.componentId,
       );
       if (!existingComponent) {
-        throw new CustomError(400, "One or more components are invalid.");
+        throw new CustomError(400, "Satu atau lebih komponen tidak valid.");
       }
       return acc + existingComponent.hppAverage * component.qty;
     }, 0);
@@ -144,7 +144,7 @@ const bundleService = {
       );
       throw new CustomError(
         400,
-        `Some components are missing or invalid: ${missingIds.join(", ")}`,
+        `Beberapa komponen hilang atau tidak valid: ${missingIds.join(", ")}`,
       );
     }
 
@@ -164,7 +164,6 @@ const bundleService = {
             hppAverage,
             price: Number(productData.price),
             lowStockThreshold: 0,
-            categoryId: productData.categoryId,
             description: productData.description ?? null,
             isBundle: true,
             totalStock: 0,
@@ -224,7 +223,6 @@ const bundleService = {
           ...(productData.name && { name: productData.name }),
           ...(productData.sku && { sku: productData.sku }),
           ...(productData.price && { price: Number(productData.price) }),
-          ...(productData.categoryId && { categoryId: productData.categoryId }),
           ...(productData.description && {
             description: productData.description,
           }),
@@ -240,11 +238,13 @@ const bundleService = {
           });
 
           if (existingComponents.length !== componentIds.length) {
-            throw new CustomError(400, "One or more components are invalid.");
+            throw new CustomError(400, "Satu atau lebih komponen tidak valid.");
           }
 
           updateData.hppAverage = components.reduce((acc, comp) => {
-            const ec = existingComponents.find(c => c.id === comp.componentId);
+            const ec = existingComponents.find(
+              (c) => c.id === comp.componentId,
+            );
             return acc + (ec?.hppAverage || 0) * comp.qty;
           }, 0);
 
@@ -283,7 +283,7 @@ const bundleService = {
     } catch (err) {
       if (err instanceof Prisma.PrismaClientKnownRequestError) {
         if (err.code === "P2025") {
-          throw new CustomError(404, `Bundle with ID ${id} not found.`);
+          throw new CustomError(404, `Paket (Bundle) dengan ID ${id} tidak ditemukan.`);
         }
       }
 
@@ -311,7 +311,7 @@ const bundleService = {
     } catch (err) {
       if (err instanceof Prisma.PrismaClientKnownRequestError) {
         if (err.code === "P2025") {
-          throw new CustomError(404, `Bundle with ID ${id} not found.`);
+          throw new CustomError(404, `Paket (Bundle) dengan ID ${id} tidak ditemukan.`);
         }
       }
       throw err;

@@ -39,7 +39,7 @@ const bundleController = {
       sendResponse(
         res,
         200,
-        "Bundles fetched successfully",
+        "Paket (Bundle) berhasil diambil",
         result.data,
         result.meta,
       );
@@ -55,7 +55,7 @@ const bundleController = {
   ) => {
     try {
       const result = await bundleService.getBundleById({ id: req.params.id });
-      sendResponse(res, 200, "Bundle fetched successfully", result);
+      sendResponse(res, 200, "Paket (Bundle) berhasil diambil", result);
     } catch (error) {
       next(error);
     }
@@ -72,7 +72,7 @@ const bundleController = {
         files: req.files as Express.Multer.File[] | undefined,
       });
 
-      sendResponse(res, 201, "Bundle created successfully", result);
+      sendResponse(res, 201, "Paket (Bundle) berhasil dibuat", result);
     } catch (error) {
       next(error);
     }
@@ -89,7 +89,7 @@ const bundleController = {
         data: req.body,
         files: req.files as Express.Multer.File[] | undefined,
       });
-      sendResponse(res, 200, "Bundle updated successfully", result);
+      sendResponse(res, 200, "Paket (Bundle) berhasil diperbarui", result);
     } catch (error) {
       next(error);
     }
@@ -102,7 +102,7 @@ const bundleController = {
   ) => {
     try {
       const result = await bundleService.deleteBundle({ id: req.params.id });
-      sendResponse(res, 200, "Bundle deleted successfully", result);
+      sendResponse(res, 200, "Paket (Bundle) berhasil dihapus", result);
     } catch (error) {
       next(error);
     }

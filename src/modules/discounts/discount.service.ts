@@ -81,7 +81,7 @@ const discountService = {
     } catch (err) {
       if (err instanceof Prisma.PrismaClientKnownRequestError) {
         if (err.code === "P2025") {
-          throw new CustomError(404, `Discount with ID ${id} not found.`);
+          throw new CustomError(404, `Diskon dengan ID ${id} tidak ditemukan.`);
         }
       }
       throw err;
@@ -95,7 +95,7 @@ const discountService = {
       if (discountData.value > 100) {
         throw new CustomError(
           400,
-          "Discount percentage cannot be greater than 100.",
+          "Persentase diskon tidak boleh lebih dari 100.",
         );
       }
     }
@@ -169,7 +169,7 @@ const discountService = {
       if (discountData.value && discountData.value > 100) {
         throw new CustomError(
           400,
-          "Discount percentage cannot be greater than 100.",
+          "Persentase diskon tidak boleh lebih dari 100.",
         );
       }
     }
@@ -233,7 +233,7 @@ const discountService = {
     } catch (err) {
       if (err instanceof Prisma.PrismaClientKnownRequestError) {
         if (err.code === "P2025") {
-          throw new CustomError(404, `Discount with ID ${id} not found.`);
+          throw new CustomError(404, `Diskon dengan ID ${id} tidak ditemukan.`);
         }
       }
       throw err;
@@ -258,7 +258,7 @@ const discountService = {
     } catch (err) {
       if (err instanceof Prisma.PrismaClientKnownRequestError) {
         if (err.code === "P2025") {
-          throw new CustomError(404, `Discount with ID ${id} not found.`);
+          throw new CustomError(404, `Diskon dengan ID ${id} tidak ditemukan.`);
         }
       }
       throw err;
