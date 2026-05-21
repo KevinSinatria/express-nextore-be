@@ -1,0 +1,65 @@
+{
+  "compilerOptions": {
+    // ========================================================================
+    // 1. Opsi Wajib: Sistem Modul (ESM + NodeNext)
+    // Ini adalah inti dari setup modern Anda.
+    // ========================================================================
+
+    "module": "nodenext", // WAJIB: Menggunakan mode modul ES modern untuk Node.js.
+    "moduleResolution": "nodenext", // WAJIB: Cara TS mencari file (mengikuti aturan ESM Node.js).
+    "target": "es2024", // Mengompilasi kode ke sintaks JavaScript ES2020.
+    "lib": ["ES2024"], // Fitur JS modern apa saja yang bisa Anda gunakan (misal Array.at()).
+    "esModuleInterop": true, // Memperbaiki 'masalah' import antara modul CJS (require) dan ESM (import).
+    "moduleDetection": "force", // Memastikan semua file .ts dianggap sebagai modul.
+    "verbatimModuleSyntax": true, // Mode import modern. Mencegah ambiguitas tipe/value.
+    "isolatedModules": true, // Memastikan tiap file bisa dikompilasi terpisah. Wajib untuk 'tsx'.
+
+    // ========================================================================
+    // 2. Opsi Struktur Proyek
+    // ========================================================================
+
+    "rootDir": "./", // Folder 'root' tempat kode .ts Anda berada.
+    "outDir": "./dist", // Folder tempat menyimpan file .js hasil kompilasi.
+    "types": ["node"], // Memberi tahu TS tentang tipe global Node.js (misal: process).
+
+    // ========================================================================
+    // 3. Opsi Kualitas Kode (Sangat Ketat / Strict)
+    // ========================================================================
+
+    "strict": true, // Menghidupkan SEMUA aturan ketat (termasuk strictNullChecks).
+    "noUncheckedIndexedAccess": true, // Super ketat: Akses array (misal arr[i]) akan dianggap bisa 'undefined'.
+    "exactOptionalPropertyTypes": true, // Super ketat: Properti opsional (prop?: string) tidak bisa di-set ke 'undefined' secara eksplisit.
+    "noUncheckedSideEffectImports": true, // Memberi warning jika import modul hanya untuk 'side effect'.
+
+    // ========================================================================
+    // 4. Opsi Output & Debugging
+    // ========================================================================
+
+    "sourceMap": true, // Membuat file .map agar bisa debug kode .ts.
+    "declaration": true, // Membuat file .d.ts (tipe).
+    "declarationMap": true, // Membuat .map untuk file .d.ts.
+
+    // ========================================================================
+    // 5. Opsi Lain-lain (Kenyamanan)
+    // ========================================================================
+
+    "skipLibCheck": true, // Melewatkan pengecekan tipe di 'node_modules'. Mempercepat kompilasi.
+
+    // ========================================================================
+    // 6. Opsi yang Tidak Relevan / Diabaikan (PENTING)
+    // ========================================================================
+
+    // 'jsx' adalah untuk React/Next.js. Ini tidak ada efeknya
+    // dan diabaikan di proyek backend Express Anda.
+    "jsx": "react-jsx"
+  },
+
+  // CATATAN PENTING:
+  // Blok "ts-node" ini HANYA dibaca oleh 'ts-node'.
+  // Karena Anda menjalankan server dengan 'tsx',
+  // 'tsx' MENGABAIKAN SELURUH BLOK di bawah ini.
+  "ts-node": {
+    "esm": true,
+    "experimentalSpecifierResolution": "node"
+  }
+}

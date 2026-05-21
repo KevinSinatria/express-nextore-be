@@ -5,7 +5,7 @@
 // Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
 
 generator client {
-  provider = "prisma-client-js"
+  provider = "prisma-client"
   output   = "../src/generated/prisma"
 }
 
@@ -14,39 +14,71 @@ datasource db {
 }
 
 enum Role {
+  SUPERUSER
   ADMIN
   SUPERVISOR
-  KASIR
+  CASHIER
 }
 
-model User {
-  id       String    @id @default(cuid())
-  name     String
-  image    String?
-  role     Role      @default(KASIR)
-  username String?   @unique
-  password String?
-  sessions Session[]
-  accounts Account[]
-
+model Pos {
+  id           String        @id @default(cuid())
+  name         String        @unique
+  location     String
+  deviceName   String        @unique
+  isActive     Boolean       @default(false)
+  activeUserId String?       @unique
+  activeUser   User?         @relation(fields: [activeUserId], references: [id])
   transactions Transaction[]
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
+
+  @@map("pos")
+}
+
+model User {
+  id              String    @id @default(cuid())
+  name            String
+  image           String?
+  email           String?   @unique
+  emailVerified   Boolean   @default(false)
+  roles           Role[]    @default([CASHIER])
+  username        String    @unique
+  displayUsername String?   @unique
+  sessions        Session[]
+  accounts        Account[]
+  lastActive      DateTime?
+  isSuspended     Boolean   @default(false)
+
+  transactions          Transaction[]
+  createdAt             DateTime              @default(now())
+  updatedAt             DateTime              @updatedAt
+  cashShifts            CashShift[]
+  auditLogs             AuditLog[]
+  activePos             Pos?
+  notifications         Notification[]
+  productPriceHistories ProductPriceHistory[]
+
+  createdPurchaseOrders  PurchaseOrder[] @relation("CreatedBy")
+  approvedPurchaseOrders PurchaseOrder[] @relation("ApprovedBy")
 
   @@map("user")
 }
 
 model Session {
-  id        String   @id @default(cuid())
-  expiresAt DateTime
-  token     String   @unique
-  createdAt DateTime
-  updatedAt DateTime
-  ipAddress String?
-  userAgent String?
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id            String   @id @default(cuid())
+  expiresAt     DateTime
+  token         String   @unique
+  createdAt     DateTime
+  updatedAt     DateTime
+  ipAddress     String?
+  userAgent     String?
+  userId        String
+  activeRole    Role?
+  activePosId   String?
+  activeShiftId String?
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  @@index([userId])
   @@map("session")
 }
 
@@ -66,6 +98,7 @@ model Account {
   createdAt             DateTime
   updatedAt             DateTime
 
+  @@index([userId])
   @@map("account")
 }
 
@@ -77,27 +110,39 @@ model Verification {
   createdAt  DateTime?
   updatedAt  DateTime?
 
+  @@index([identifier])
   @@map("verification")
 }
 
-model Product {
-  id                String            @id @default(cuid())
-  sku               String            @unique
-  name              String
-  hpp               Float
-  price             Float
-  stock             Int               @default(0)
-  lowStockThreshold Int               @default(10)
-  items             TransactionItem[]
-  createdAt         DateTime          @default(now())
-  updatedAt         DateTime          @updatedAt
-  category          Category?         @relation(fields: [categoryId], references: [id])
-  categoryId        String?
+model Discount {
+  id                 String       @id @default(cuid())
+  name               String
+  description        String?
+  type               DiscountType @default(PERCENTAGE)
+  value              Float
+  startDate          DateTime     @default(now())
+  endDate            DateTime
+  isActive           Boolean      @default(true)
+  isTransactionLevel Boolean      @default(false)
+  isMemberLevel      Boolean      @default(false)
+
+  products     Product[]
+  transactions Transaction[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+enum DiscountType {
+  PERCENTAGE
+  FIXED_AMOUNT
 }
 
 model Category {
   id        String    @id @default(cuid())
   name      String
+  slug      String    @unique @default(cuid())
+  hasExpiry Boolean   @default(false)
   products  Product[]
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
@@ -106,8 +151,8 @@ model Category {
 model Member {
   id           String        @id @default(cuid())
   name         String
-  phone        String?       @unique
-  points       Int           @default(0)
+  phone        String        @unique
+  isActive     Boolean       @default(true)
   transactions Transaction[]
   createdAt    DateTime      @default(now())
 }
@@ -115,18 +160,27 @@ model Member {
 model Transaction {
   id            String            @id @default(cuid())
   invoiceNumber String            @unique
+  customerName  String?
   totalGross    Float
   totalDiscount Float             @default(0)
   totalNet      Float
   totalProfit   Float
+  totalHpp      Float             @default(0)
   paymentMethod String
-  status        TransactionStatus @default(COMPLETED)
+  cashReceived  Float?
+  change        Float?
+  status        TransactionStatus @default(PENDING)
+  cashShiftId   String?
+  cashShift     CashShift?        @relation(fields: [cashShiftId], references: [id])
 
   userId   String
   user     User              @relation(fields: [userId], references: [id])
+  posId    String?
+  pos      Pos?              @relation(fields: [posId], references: [id])
   memberId String?
   member   Member?           @relation(fields: [memberId], references: [id])
   items    TransactionItem[]
+  discount Discount[]
 
   createdAt DateTime @default(now())
 }
@@ -144,8 +198,199 @@ model TransactionItem {
   productId     String
   product       Product     @relation(fields: [productId], references: [id])
 
-  qty         Int
-  priceAtSale Float
-  hppAtSale   Float
-  subtotal    Float
+  qty           Int
+  priceAtSale   Float
+  hppAtSale     Float
+  totalDiscount Float @default(0)
+  subtotal      Float
+}
+
+model Product {
+  id                String            @id @default(cuid())
+  sku               String            @unique
+  name              String
+  description       String?
+  images            String[]          @default([])
+  hppAverage        Float             @default(0)
+  price             Float
+  unit              String            @default("pcs") @db.VarChar(50)
+  isBundle          Boolean           @default(false)
+  totalStock        Int               @default(0)
+  lowStockThreshold Int               @default(10)
+  hasLossAlert      Boolean           @default(false)
+  items             TransactionItem[]
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+  category          Category?         @relation(fields: [categoryId], references: [id])
+  categoryId        String?
+  discount          Discount[]
+  stockBatches      StockBatch[]
+  // Relasi: Jika produk ini ADALAH sebuah paket, maka dia punya daftar isi
+  bundleComponents  BundleComponent[] @relation("BundleParent")
+
+  // Relasi: Jika produk ini BAGIAN dari paket lain (opsional)
+  asComponentIn         BundleComponent[]     @relation("ComponentChild")
+  priceListItems        PriceListItem[]
+  productPriceHistories ProductPriceHistory[]
+  purchaseOrders        PurchaseOrder[]
+}
+
+model BundleComponent {
+  id String @id @default(cuid())
+
+  // Paket utamanya (si Label/Parcel)
+  bundleProductId String
+  bundleProduct   Product @relation("BundleParent", fields: [bundleProductId], references: [id], onDelete: Cascade)
+
+  // Isi dari paket tersebut (Produk satuannya)
+  componentId String
+  component   Product @relation("ComponentChild", fields: [componentId], references: [id])
+
+  qty Int
+
+  @@unique([bundleProductId, componentId])
+}
+
+model StockBatch {
+  id                String      @id @default(cuid())
+  productId         String
+  batchNumber       String      @unique
+  product           Product     @relation(fields: [productId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  initialQuantity   Int
+  remainingQuantity Int
+  purchasePrice     Float
+  expiryDate        DateTime?
+  createdAt         DateTime    @default(now())
+  status            BatchStatus @default(ACTIVE)
+}
+
+enum PurchaseStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model PurchaseOrder {
+  id            String  @id @default(cuid())
+  invoiceNumber String?
+
+  productId     String
+  product       Product   @relation(fields: [productId], references: [id])
+  qty           Int
+  purchasePrice Float
+  expiryDate    DateTime?
+
+  status PurchaseStatus @default(PENDING)
+  notes  String?
+
+  createdById String
+  createdBy   User   @relation("CreatedBy", fields: [createdById], references: [id])
+
+  approvedById String?
+  approvedBy   User?   @relation("ApprovedBy", fields: [approvedById], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("purchase_orders")
+}
+
+enum BatchStatus {
+  ACTIVE
+  EXPIRED
+}
+
+enum ReportStatus {
+  PENDING
+  COMPLETED
+}
+
+model CashShift {
+  id             String        @id @default(cuid())
+  userId         String
+  user           User          @relation(fields: [userId], references: [id])
+  startTime      DateTime      @default(now())
+  endTime        DateTime?
+  startingCash   Float
+  expectedCash   Float?
+  actualCash     Float?
+  difference     Float?
+  transactions   Transaction[]
+  status         ShiftStatus   @default(OPEN)
+  isIssues       Boolean       @default(false)
+  additionalCash Float         @default(0)
+  notes          String?
+  reportStatus   ReportStatus  @default(PENDING)
+  verifiedBy     String?
+  verifiedAt     DateTime?
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  action    String
+  details   Json?
+  createdAt DateTime @default(now())
+}
+
+enum ShiftStatus {
+  OPEN
+  CLOSED
+}
+
+model Setting {
+  id                  String   @id @default("global-setting")
+  expiredReminderDays Int      @default(7)
+  updateAt            DateTime @updatedAt
+
+  @@map("settings")
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title     String
+  message   String
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@map("notifications")
+}
+
+model PriceList {
+  id          String          @id @default(cuid())
+  name        String
+  description String?
+  isActive    Boolean         @default(false)
+  items       PriceListItem[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model PriceListItem {
+  id          String    @id @default(cuid())
+  priceListId String
+  priceList   PriceList @relation(fields: [priceListId], references: [id], onDelete: Cascade)
+  productId   String
+  product     Product   @relation(fields: [productId], references: [id])
+
+  newPrice Float
+
+  @@unique([priceListId, productId])
+}
+
+model ProductPriceHistory {
+  id        String   @id @default(cuid())
+  productId String
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  oldPrice  Float
+  newPrice  Float
+  changedAt DateTime @default(now())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@map("product_price_history")
 }

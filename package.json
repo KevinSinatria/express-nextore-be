@@ -6,31 +6,60 @@
   "scripts": {
     "dev": "tsx watch src/server.ts",
     "build": "tsc",
-    "start": "node dist/server.js",
+    "start": "node dist/src/server.js",
     "seed": "tsx --env-file=.env prisma/seed.ts",
     "db:push": "prisma db push",
-    "db:migrate": "prisma migrate dev"
+    "db:migrate": "prisma migrate dev",
+    "test:setup": "tsx scripts/setup-test-db.ts",
+    "test": "DATABASE_URL=\"postgresql://nextore_admin:dTdxuuBjH8Eb%2FFQh9QGIL7WlE8AsoVGjlaf6ij6o6xE%3D@localhost:5432/nextore_test?schema=public\" vitest run"
+  },
+  "prisma": {
+    "seed": "npx tsx prisma/seed.ts"
   },
   "keywords": [],
   "author": "Kevin Sinatria",
   "license": "ISC",
   "type": "module",
   "devDependencies": {
+    "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",
+    "@types/morgan": "^1.9.10",
     "@types/multer": "^2.0.0",
-    "@types/node": "^24.10.1",
+    "@types/node": "^24.12.2",
+    "@types/node-cron": "^3.0.11",
+    "@types/pg": "^8.18.0",
+    "@types/supertest": "^7.2.0",
+    "@types/swagger-ui-express": "^4.1.8",
+    "@types/yamljs": "^0.2.34",
+    "@vitest/coverage-v8": "^4.1.2",
     "prisma": "^7.0.1",
+    "supertest": "^7.2.2",
+    "ts-node": "^10.9.2",
     "tsx": "^4.20.6",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "vitest": "^4.1.2",
+    "vitest-mock-extended": "^3.1.1"
   },
   "dependencies": {
     "@better-auth/prisma-adapter": "^1.5.3",
+    "@faker-js/faker": "^8.1.0",
+    "@paralleldrive/cuid2": "^3.3.0",
+    "@prisma/adapter-pg": "^7.4.2",
     "@prisma/client": "^7.0.1",
     "better-auth": "^1.5.3",
-    "cors": "^2.8.5",
+    "cloudinary": "^2.9.0",
+    "cors": "^2.8.6",
     "dotenv": "^17.2.3",
+    "exceljs": "^4.4.0",
     "express": "^5.1.0",
+    "express-basic-auth": "^1.2.1",
+    "morgan": "^1.10.1",
     "multer": "^2.0.2",
+    "node-cron": "^4.2.1",
+    "pg": "^8.20.0",
+    "pusher": "^5.3.3",
+    "swagger-ui-express": "^5.0.1",
+    "yamljs": "^0.3.0",
     "zod": "^4.1.13"
   }
 }

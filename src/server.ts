@@ -1,11 +1,15 @@
-import express from "express";
-import { toNodeHandler } from "better-auth/node";
-import { auth } from "./lib/auth";
+import app from "./app.js";
+import cron from "node-cron";
+import { env } from "./config/env.js";
+import notificationService from "./modules/notifications/notification.service.js";
 
-const app = express();
+const PORT = env("PORT");
 
-app.all("/api/auth/*splat", toNodeHandler(auth));
+cron.schedule("0 * * * *", () => {
+  console.log("Running daily expiry check..");
+  notificationService.triggerRealtimeNotification();
+})
 
-app.use(express.json());
-
-export default app;
+app.listen(PORT, () => {
+  console.log(`Server is running on port ${PORT}`);
+});
